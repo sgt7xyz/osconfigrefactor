@@ -27,12 +27,12 @@ debian-tiling-setup.sh --> debian-tiling-functions.sh --> apt, curl, ufw, git
 
 ## Prerequisites
 
-| Requirement                         | Version                |
-| :---------------------------------- | :--------------------- |
-| Debian minimal or netinst install   | 12 (bookworm) or newer |
-| Bash                                | 5.0 or newer           |
-| A user with `sudo` rights           | Not applicable         |
-| Internet access                     | Not applicable         |
+| Requirement                       | Version                |
+| :-------------------------------- | :--------------------- |
+| Debian minimal or netinst install | 12 (bookworm) or newer |
+| Bash                              | 5.0 or newer           |
+| A user with `sudo` rights         | Not applicable         |
+| Internet access                   | Not applicable         |
 
 ## Quick start
 
@@ -64,35 +64,35 @@ script.
 
 This project reads no environment variables. Behavior is controlled by the files below.
 
-| File or folder         | Description                                         | Default                       |
-| :--------------------- | :-------------------------------------------------- | :---------------------------- |
-| `package_install.txt`  | Packages to install, one per line                   | Xorg, i3, polybar, dev tools  |
-| `package_remove.txt`   | Packages to purge, one per line                     | `aisleriot`                   |
-| `configs/`             | i3, polybar, rofi, alacritty, picom, and X configs  | Catppuccin Macchiato theme    |
-| `scripts/`             | Helper scripts copied to `~/scripts`                | Volume and update helpers     |
-| `wallpapers/`          | Wallpapers copied to `~/Pictures/wallpapers`        | Nine wallpapers               |
+| File or folder        | Description                                        | Default                      |
+| :-------------------- | :------------------------------------------------- | :--------------------------- |
+| `package_install.txt` | Packages to install, one per line                  | Xorg, i3, polybar, dev tools |
+| `package_remove.txt`  | Packages to purge, one per line                    | `aisleriot`                  |
+| `configs/`            | i3, polybar, rofi, alacritty, picom, and X configs | Catppuccin Macchiato theme   |
+| `scripts/`            | Helper scripts copied to `~/scripts`               | Volume and update helpers    |
+| `wallpapers/`         | Wallpapers copied to `~/Pictures/wallpapers`       | Nine wallpapers              |
 
 ## Usage
 
 Run `./debian-tiling-setup.sh` and pick a step by number. Choose **15** to run every step in order.
 
-| Option | Step                                                              |
-| -----: | :---------------------------------------------------------------- |
-|      1 | Backup configs, update, install, and remove packages              |
-|      2 | Create custom directories in your home directory                  |
-|      3 | Install fonts                                                     |
-|      4 | Configure console terminal settings                               |
-|      5 | Copy wallpapers to `~/Pictures/wallpapers`                        |
-|      6 | Customize tiling settings                                         |
-|      7 | Customize vimrc file settings                                     |
-|      8 | Install VLC, plugins, and restricted extras                       |
-|      9 | Install UFW and enable it                                         |
-|     10 | Configure swappiness                                              |
-|     11 | Speed up boot time                                                |
-|     12 | Prep and install VSCode                                           |
-|     13 | Configure Git                                                     |
-|     15 | Execute all                                                       |
-|      0 | Exit                                                              |
+| Option | Step                                                 |
+| -----: | :--------------------------------------------------- |
+|      1 | Backup configs, update, install, and remove packages |
+|      2 | Create custom directories in your home directory     |
+|      3 | Install fonts                                        |
+|      4 | Configure console terminal settings                  |
+|      5 | Copy wallpapers to `~/Pictures/wallpapers`           |
+|      6 | Customize tiling settings                            |
+|      7 | Customize vimrc file settings                        |
+|      8 | Install VLC, plugins, and restricted extras          |
+|      9 | Install UFW and enable it                            |
+|     10 | Configure swappiness                                 |
+|     11 | Speed up boot time                                   |
+|     12 | Prep and install VSCode                              |
+|     13 | Configure Git                                        |
+|     15 | Execute all                                          |
+|      0 | Exit                                                 |
 
 ## Project structure
 
@@ -131,11 +131,10 @@ Test full runs in a throwaway Debian VM before using them on a real machine.
 
 ## Troubleshooting
 
-| Problem                                          | Fix                                                    |
-| :----------------------------------------------- | :----------------------------------------------------- |
-| `package_install.txt: No such file or directory` | Run the script from the repository directory.          |
-| Step 1 fails with `File exists`                  | Remove or rename `~/.config-backups` and rerun.        |
-| Step 13 cannot find `configs/.gitignore_global`  | Add a `.gitignore_global` file to `configs/`.          |
+| Problem                                         | Fix                                                          |
+| :---------------------------------------------- | :----------------------------------------------------------- |
+| A step prints `failed with exit code`           | Read the error above it, fix the cause, and rerun that step. |
+| Step 13 cannot find `configs/.gitignore_global` | Add a `.gitignore_global` file to `configs/`.                |
 
 ## Roadmap
 

@@ -121,7 +121,7 @@ of the Nerd Font, and `wallpapers/` holds the desktop images.
 * **Inputs:** None.
 * **Outputs:** A status message.
 * **Why it exists:** Every package step needs winget.
-* **Side effects:** On failure it calls `exit`, which ends the whole menu.
+* **Side effects:** On failure it prints an error and returns to the menu.
 
 ### Update-Patch-Windows
 
@@ -139,7 +139,7 @@ of the Nerd Font, and `wallpapers/` holds the desktop images.
 * **Inputs:** `-ScriptDir`.
 * **Outputs:** `logs/winget_install.log` with one line per package.
 * **Why it exists:** Keeps the package list in data instead of code.
-* **Side effects:** Network calls and app installs. Calls `exit` if winget or the list is missing.
+* **Side effects:** Network calls and app installs. Returns early if winget or the list is missing.
 
 ### Uninstall-WingetPackages
 
@@ -148,7 +148,7 @@ of the Nerd Font, and `wallpapers/` holds the desktop images.
 * **Inputs:** `-ScriptDir`.
 * **Outputs:** `logs/winget_uninstall.log`.
 * **Why it exists:** Removes software you do not want, from a list.
-* **Side effects:** App removals. Calls `exit` if winget or the list is missing.
+* **Side effects:** App removals. Returns early if winget or the list is missing.
 
 ### Install-Chrome
 
@@ -156,7 +156,7 @@ of the Nerd Font, and `wallpapers/` holds the desktop images.
 * **Inputs:** None.
 * **Outputs:** Google Chrome installed.
 * **Why it exists:** Installs Chrome without the Store or a browser.
-* **Side effects:** Network call and an elevated installer run. The download URL uses `http://`.
+* **Side effects:** Network call over HTTPS and an elevated installer run.
 
 ### Install-SystemFont and Test-FontInstalled
 
@@ -206,8 +206,7 @@ of the Nerd Font, and `wallpapers/` holds the desktop images.
 * **Inputs:** `-ScriptDir`.
 * **Outputs:** `~\.gitignore_global` and changes to `~\.gitconfig`.
 * **Why it exists:** Gives every new repository the same defaults.
-* **Side effects:** User file writes. `core.excludesfile` is set twice, and the second value uses
-  `%USERPROFILE%`, which Git does not expand, so it overrides the working first value.
+* **Side effects:** User file writes. Name and email are left for the user.
 
 ### Remove-OneDrive
 
@@ -307,13 +306,9 @@ of the Nerd Font, and `wallpapers/` holds the desktop images.
 ## Known limitations or sharp edges
 
 * **winget cannot install itself.** `Install-Winget` runs `winget` to install App Installer, so
-  on a machine without winget it fails and ends the menu.
-* **Exit inside functions.** Several functions call `exit` on errors, which closes the whole menu
-  instead of returning to it.
-* **Plain HTTP download.** `Install-Chrome` fetches its installer over `http://` and runs it
-  elevated.
-* **Broken Git excludes path.** `Install-Git-Config` overwrites the working `core.excludesfile`
-  value with an unexpanded `%USERPROFILE%` path.
+  on a machine without winget it fails. Install App Installer from the Microsoft Store first.
+* **Errors return to the menu.** Functions return on errors, so in option 13 later steps still run
+  after an earlier one fails.
 * **Maintenance runs as SYSTEM.** HKCU tweaks in the maintenance script apply to the SYSTEM
   account, not to the signed in user. Only HKLM tweaks and services are kept up for users.
 * **Monthly is approximate.** The monthly task runs every fourth Sunday, because Task Scheduler
@@ -326,10 +321,11 @@ of the Nerd Font, and `wallpapers/` holds the desktop images.
 
 ## Change log
 
-| Date       | Summary                                                                      |
-| :--------- | :--------------------------------------------------------------------------- |
-| 2026-11-01 | Rewrote this file to the project template and renamed scripts to kebab-case. |
-| 2024-11-01 | Added scheduled maintenance tasks with weekly and monthly modes.             |
-| 2024-10-31 | Expanded privacy tweaks to Edge, Cortana, Explorer, and Search.              |
-| 2024-10-30 | Reorganized the functions file and aligned menu and function numbers.        |
-| 2024-10-29 | Added the first debloating and optimization implementation.                  |
+| Date       | Summary                                                                           |
+| :--------- | :-------------------------------------------------------------------------------- |
+| 2026-11-01 | Fixed the Chrome download URL, the Git excludes path, and exits inside functions. |
+| 2026-11-01 | Rewrote this file to the project template and renamed scripts to kebab-case.      |
+| 2024-11-01 | Added scheduled maintenance tasks with weekly and monthly modes.                  |
+| 2024-10-31 | Expanded privacy tweaks to Edge, Cortana, Explorer, and Search.                   |
+| 2024-10-30 | Reorganized the functions file and aligned menu and function numbers.             |
+| 2024-10-29 | Added the first debloating and optimization implementation.                       |

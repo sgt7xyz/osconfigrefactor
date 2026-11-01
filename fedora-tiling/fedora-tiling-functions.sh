@@ -19,11 +19,14 @@ backup_configs() {
 
 # 2. Update DNF for faster downloads.
 # Parallel downloads and the fastest mirror cut the time of every later dnf step.
+# The backup is taken once and each line is only added once, so the step is safe to rerun.
 update_dnf() {
-   sudo cp -p /etc/dnf/dnf.conf /etc/dnf/dnf.original
-   echo 'max_parallel_downloads=10' | sudo tee -a /etc/dnf/dnf.conf > /dev/null
-   echo 'fastestmirror=true' | sudo tee -a /etc/dnf/dnf.conf > /dev/null
-   echo 'DNF configuration updated for faster downloads!'
+    [ -f /etc/dnf/dnf.original ] || sudo cp -p /etc/dnf/dnf.conf /etc/dnf/dnf.original
+    local setting
+    for setting in 'max_parallel_downloads=10' 'fastestmirror=true'; do
+        grep -qxF "$setting" /etc/dnf/dnf.conf || echo "$setting" | sudo tee -a /etc/dnf/dnf.conf > /dev/null
+    done
+    echo 'DNF configuration updated for faster downloads!'
 }
 
 # 3. Upgrade Fedora.
@@ -34,10 +37,11 @@ upgrade_fedora() {
 
 # 4. Update firmware.
 # Refreshes LVFS metadata first, because a stale cache hides available firmware updates.
+# NOTE: fwupdmgr exits with 2 when there is nothing to update, so that case is not an error.
 update_firmware() {
     sudo fwupdmgr refresh --force
-    sudo fwupdmgr get-updates
-    sudo fwupdmgr update
+    sudo fwupdmgr get-updates || echo 'No firmware updates available.'
+    sudo fwupdmgr update || echo 'No firmware updates applied.'
     echo 'Firmware update completed!'
 }
 
@@ -45,8 +49,9 @@ update_firmware() {
 # Package names live in package_install.txt so the list can change without editing code.
 install_packages() {
     if [ -f package_install.txt ]; then
-        while IFS= read -r package; do
-            sudo dnf -y install "$package"
+        # The -n test also reads a last line that has no trailing newline.
+        while IFS= read -r package || [ -n "$package" ]; do
+            sudo dnf -y install "$package" || echo "Could not install $package, continuing." >&2
         done < package_install.txt
         echo 'Packages installed successfully!'
     else
@@ -57,8 +62,8 @@ install_packages() {
 # Removes unwanted packages listed in package_remove.txt, then drops orphaned dependencies.
 remove_packages() {
     if [ -f package_remove.txt ]; then
-        while IFS= read -r package; do
-            sudo dnf -y remove "$package"
+        while IFS= read -r package || [ -n "$package" ]; do
+            sudo dnf -y remove "$package" || echo "Could not remove $package, continuing." >&2
         done < package_remove.txt
         sudo dnf -y autoremove
         echo 'Packages removed successfully!'
@@ -102,17 +107,15 @@ create_directories() {
 install_font() {
     local font_dir=~/fonttmp
     local font_url="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/DroidSansMono.zip"
-    mkdir -p "$font_dir"
+    mkdir -p "$font_dir" ~/.local/share/fonts
     echo 'Downloading and Installing Fonts...'
-    cd "$font_dir"
-    curl -L "$font_url" -o "DroidSansMonoNerdFont.zip"
+    curl -fL "$font_url" -o "$font_dir/DroidSansMonoNerdFont.zip"
     echo "Unzipping the font..."
-    unzip "DroidSansMonoNerdFont.zip" -d "."
-    cp *.otf ~/.local/share/fonts/
+    unzip -o "$font_dir/DroidSansMonoNerdFont.zip" -d "$font_dir"
+    cp "$font_dir"/*.otf ~/.local/share/fonts/
     echo "Refreshing font cache..."
     fc-cache -f -v
     echo "Cleaning up..."
-    cd - > /dev/null
     rm -rf "$font_dir"
     echo 'Fonts installed successfully. Ensure you select the font in your terminal etc.'
 }
@@ -120,7 +123,7 @@ install_font() {
 # 11. Copy wallpapers to ~/Pictures/wallpapers.
 copy_wallpapers() {
     if [ -d "./wallpapers" ]; then
-        cp ./wallpapers/* ~/Pictures/wallpapers/ 2>/dev/null
+        cp ./wallpapers/* ~/Pictures/wallpapers/
         echo 'Wallpapers copied successfully!'
     else
         echo 'Warning: ./wallpapers directory not found!'
@@ -172,12 +175,14 @@ customize_tiling() {
 # 13. Customize vimrc file settings.
 # NOTE: This overwrites any existing ~/.vimrc. The bell settings silence the terminal beep.
 configure_vimrc() {
-    echo "set noerrorbells" > ~/.vimrc
-    echo "set visualbell" >> ~/.vimrc
-    echo "set t_vb=" >> ~/.vimrc
-    echo "syntax on" >> ~/.vimrc
-    echo "set number" >> ~/.vimrc
-    echo "set mouse=r" >> ~/.vimrc
+    cat > ~/.vimrc <<'VIMRC'
+set noerrorbells
+set visualbell
+set t_vb=
+syntax on
+set number
+set mouse=r
+VIMRC
     echo 'Vim customized successfully!'
 }
 
@@ -198,12 +203,12 @@ install_vlc_restricted_extras() {
 install_vscode() {
     echo 'Setting up VSCode repository...'
     sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
-    sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
-echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\nautorefresh=1\ntype=rpm-md\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" | sudo tee /etc/yum.repos.d/vscode.repo > /dev/null
+    echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\nautorefresh=1\ntype=rpm-md\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" | sudo tee /etc/yum.repos.d/vscode.repo > /dev/null
     echo 'VSCode repository configured successfully!'
     
     echo 'Installing VSCode...'
-    sudo dnf -y check-update
+    # NOTE: makecache refreshes metadata. dnf check-update exits with 100 when updates exist.
+    sudo dnf makecache
     sudo dnf -y install code
     echo 'VSCode installed successfully!'
 }
@@ -259,14 +264,14 @@ configure_swappiness() {
     sudo /bin/su -c "echo 'vm.swappiness = 10' > /etc/sysctl.d/swappiness.conf"
     sudo sysctl -f /etc/sysctl.d/swappiness.conf
     echo 'Swappiness after configuration:'
-    sudo sysctl -a | grep vm.swappiness
+    sysctl vm.swappiness
     echo 'Swappiness configured successfully!'
 }
 
 # 20. Speed up boot time.
-# Backs up the GRUB config first so the original timeout can be restored.
+# Backs up the GRUB config once, so a rerun cannot replace the original with an edited copy.
 speed_up_boot_time() {
-    sudo cp /etc/default/grub /etc/default/grub.original
+    [ -f /etc/default/grub.original ] || sudo cp -p /etc/default/grub /etc/default/grub.original
     sudo sed -i 's/GRUB_TIMEOUT=5/GRUB_TIMEOUT=2/g' /etc/default/grub
     # Fedora has no update-grub wrapper, so the config is regenerated directly.
     sudo grub2-mkconfig -o /boot/grub2/grub.cfg
@@ -277,6 +282,7 @@ speed_up_boot_time() {
 # 21. Install Docker.
 install_docker() {
     # Distro Docker packages conflict with docker-ce, so they are removed first.
+    # On a fresh install none of them are present, so a failed remove is not an error.
     sudo dnf remove -y \
         docker \
         docker-client \
@@ -287,11 +293,11 @@ install_docker() {
         docker-logrotate \
         docker-selinux \
         docker-engine-selinux \
-        docker-engine
+        docker-engine || true
     echo 'Old Docker versions removed.'
 
     sudo dnf -y install dnf-plugins-core
-    sudo dnf-3 config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
+    sudo dnf config-manager addrepo --overwrite --from-repofile=https://download.docker.com/linux/fedora/docker-ce.repo
 
     sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
     echo 'Docker installed successfully!'
@@ -308,8 +314,8 @@ install_docker() {
 install_virtualbox() {
 
     # Kernel headers and DKMS are needed to build the VirtualBox kernel modules.
-    sudo dnf install @development-tools
-    sudo dnf install kernel-headers kernel-devel dkms
+    sudo dnf -y install @development-tools
+    sudo dnf -y install kernel-headers kernel-devel dkms
 
     # SECURITY: Oracle's key lets dnf verify VirtualBox packages and repository metadata.
     wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | sudo rpm --import -
@@ -317,8 +323,8 @@ install_virtualbox() {
 
     sudo sh -c 'cat > /etc/yum.repos.d/virtualbox.repo <<EOF
 [virtualbox]
-name=Fedora $releasever - $basearch - VirtualBox
-baseurl=http://download.virtualbox.org/virtualbox/rpm/fedora/\$releasever/\$basearch
+name=Fedora \$releasever - \$basearch - VirtualBox
+baseurl=https://download.virtualbox.org/virtualbox/rpm/fedora/\$releasever/\$basearch
 enabled=1
 gpgcheck=1
 repo_gpgcheck=1

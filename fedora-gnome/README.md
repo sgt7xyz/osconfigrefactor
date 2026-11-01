@@ -27,12 +27,12 @@ fedora-gnome-setup.sh --> fedora-gnome-functions.sh --> dnf, flatpak, fwupdmgr, 
 
 ## Prerequisites
 
-| Requirement                   | Version          |
-| :---------------------------- | :--------------- |
-| Fedora Workstation (GNOME)    | 41 or newer      |
-| Bash                          | 5.0 or newer     |
-| A user with `sudo` rights     | Not applicable   |
-| Internet access               | Not applicable   |
+| Requirement                | Version        |
+| :------------------------- | :------------- |
+| Fedora Workstation (GNOME) | 41 or newer    |
+| Bash                       | 5.0 or newer   |
+| A user with `sudo` rights  | Not applicable |
+| Internet access            | Not applicable |
 
 ## Quick start
 
@@ -55,41 +55,41 @@ fedora-gnome-setup.sh --> fedora-gnome-functions.sh --> dnf, flatpak, fwupdmgr, 
 
 This project reads no environment variables. Behavior is controlled by the files below.
 
-| File                         | Description                                   | Default                         |
-| :--------------------------- | :-------------------------------------------- | :------------------------------ |
-| `package_install.txt`        | Packages to install, one per line             | GNOME Tweaks, Tilix, Vim, nmap  |
-| `package_remove.txt`         | Packages to remove, one per line              | `tali`                          |
-| `wallpapers/`                | Wallpapers copied to `~/Pictures/wallpapers`  | Eleven wallpapers               |
-| `configs/.gitignore_global`  | Global Git ignore file copied to `~/`         | Common OS and editor files      |
+| File                        | Description                                  | Default                        |
+| :-------------------------- | :------------------------------------------- | :----------------------------- |
+| `package_install.txt`       | Packages to install, one per line            | GNOME Tweaks, Tilix, Vim, nmap |
+| `package_remove.txt`        | Packages to remove, one per line             | `tali`                         |
+| `wallpapers/`               | Wallpapers copied to `~/Pictures/wallpapers` | Eleven wallpapers              |
+| `configs/.gitignore_global` | Global Git ignore file copied to `~/`        | Common OS and editor files     |
 
 ## Usage
 
 Run `./fedora-gnome-setup.sh` and pick a step by number. Choose **21** to run every step in order.
 
-| Option | Group                | Step                                  |
-| -----: | :------------------- | :------------------------------------ |
-|      1 | System preparation   | Backup configs                        |
-|      2 | System preparation   | Update DNF for faster downloads       |
-|      3 | System preparation   | Upgrade Fedora                        |
-|      4 | System preparation   | Update firmware                       |
-|      5 | Package management   | Install and remove packages           |
-|      6 | Package management   | Enable Flathub repository             |
-|      7 | Package management   | Install development tools             |
-|      8 | Package management   | Install codecs                        |
-|      9 | Package management   | Install VLC and multimedia codecs     |
-|     10 | Environment setup    | Create custom directories             |
-|     11 | Environment setup    | Install fonts                         |
-|     12 | Environment setup    | Copy wallpapers                       |
-|     13 | Environment setup    | Customize GNOME settings              |
-|     14 | Environment setup    | Configure Vim                         |
-|     15 | Environment setup    | Install Numix theme and icons         |
-|     16 | Applications         | Install VSCode                        |
-|     17 | Applications         | Configure Git                         |
-|     18 | System configuration | Install and enable firewalld          |
-|     19 | System configuration | Configure swappiness                  |
-|     20 | System configuration | Speed up boot time                    |
-|     21 | All                  | Execute all steps                     |
-|      0 | Exit                 | Exit                                  |
+| Option | Group                | Step                              |
+| -----: | :------------------- | :-------------------------------- |
+|      1 | System preparation   | Backup configs                    |
+|      2 | System preparation   | Update DNF for faster downloads   |
+|      3 | System preparation   | Upgrade Fedora                    |
+|      4 | System preparation   | Update firmware                   |
+|      5 | Package management   | Install and remove packages       |
+|      6 | Package management   | Enable Flathub repository         |
+|      7 | Package management   | Install development tools         |
+|      8 | Package management   | Install codecs                    |
+|      9 | Package management   | Install VLC and multimedia codecs |
+|     10 | Environment setup    | Create custom directories         |
+|     11 | Environment setup    | Install fonts                     |
+|     12 | Environment setup    | Copy wallpapers                   |
+|     13 | Environment setup    | Customize GNOME settings          |
+|     14 | Environment setup    | Configure Vim                     |
+|     15 | Environment setup    | Install Numix theme and icons     |
+|     16 | Applications         | Install VSCode                    |
+|     17 | Applications         | Configure Git                     |
+|     18 | System configuration | Install and enable firewalld      |
+|     19 | System configuration | Configure swappiness              |
+|     20 | System configuration | Speed up boot time                |
+|     21 | All                  | Execute all steps                 |
+|      0 | Exit                 | Exit                              |
 
 ### Manual steps
 
@@ -156,12 +156,10 @@ Test full runs in a throwaway Fedora VM before using them on a real machine.
 
 ## Troubleshooting
 
-| Problem                                          | Fix                                                    |
-| :----------------------------------------------- | :----------------------------------------------------- |
-| Wallpaper does not change after step 13          | Log out and back in. GNOME does not always refresh it. |
-| `package_install.txt: No such file or directory` | Run the script from the repository directory.          |
-| Step 1 fails with `File exists`                  | Remove or rename `~/.config-backups` and rerun.        |
-| Last package in a list is skipped                | End the list file with a newline.                      |
+| Problem                                 | Fix                                                          |
+| :-------------------------------------- | :----------------------------------------------------------- |
+| A step prints `failed with exit code`   | Read the error above it, fix the cause, and rerun that step. |
+| Wallpaper does not change after step 13 | Log out and back in. GNOME does not always refresh it.       |
 
 ## Roadmap
 

@@ -47,6 +47,10 @@ It resolves its directory with `dirname` and `realpath`, so the functions file i
 the script is started from elsewhere. The `case` block maps each number to one or more functions.
 Option 1 calls three functions and option 11 calls two, because those steps must run together.
 
+The script runs with `set -euo pipefail` and changes into the repository directory, so the data
+files are found wherever it is started from. Every function call goes through `run_step`, so a
+failing command stops only that step and the menu keeps running.
+
 ### debian-gnome-functions.sh
 
 **Purpose:** Holds one function per setup step. It has no top level code and only defines
@@ -76,7 +80,17 @@ notice that the sourced functions file was not passed as input.
 
 ## Function entries
 
-All functions live in `debian-gnome-functions.sh` and take no arguments.
+### run_step
+
+* **Does:** Runs one step function in a subshell with errexit on, then prints the exit code if the
+  step failed.
+* **Inputs:** The function name to run.
+* **Outputs:** The step's output, plus an error line on failure.
+* **Why it exists:** Under `set -e` alone, any failing command would close the whole menu. Bash
+  also ignores errexit inside `||` lists, so the helper pauses errexit in the menu shell instead.
+* **Side effects:** None of its own. A `cd` or variable change inside a step stays in its subshell.
+
+All other functions live in `debian-gnome-functions.sh` and take no arguments.
 
 ### update_debian
 
@@ -89,7 +103,7 @@ All functions live in `debian-gnome-functions.sh` and take no arguments.
 ### install_packages
 
 * **Does:** Installs every package named in `package_install.txt`, one at a time.
-* **Inputs:** `package_install.txt`, read from the current working directory.
+* **Inputs:** `package_install.txt`. A package that fails to install is reported and skipped.
 * **Outputs:** Installed packages.
 * **Why it exists:** Keeps the tool list in data instead of code.
 * **Side effects:** Network calls and system package changes through `sudo`.
@@ -97,7 +111,7 @@ All functions live in `debian-gnome-functions.sh` and take no arguments.
 ### remove_packages
 
 * **Does:** Purges every package in `package_remove.txt`, then runs `apt-get autoremove`.
-* **Inputs:** `package_remove.txt`, read from the current working directory.
+* **Inputs:** `package_remove.txt`. A package that fails to purge is reported and skipped.
 * **Outputs:** Removed packages and their unused dependencies.
 * **Why it exists:** Clears out the GNOME games that ship with the desktop task.
 * **Side effects:** System package removal through `sudo`.
@@ -114,7 +128,7 @@ All functions live in `debian-gnome-functions.sh` and take no arguments.
 ### copy_wallpapers
 
 * **Does:** Copies the bundled wallpaper into `~/Pictures/wallpapers`.
-* **Inputs:** `wallpapers/Wallpaper-House.com_391811.jpg`, relative to the current directory.
+* **Inputs:** `wallpapers/Wallpaper-House.com_391811.jpg`.
 * **Outputs:** One image file.
 * **Why it exists:** `customize_gnome` points GNOME at this copied file.
 * **Side effects:** File write. Depends on `create_directories` having run.
@@ -167,8 +181,8 @@ All functions live in `debian-gnome-functions.sh` and take no arguments.
 * **Inputs:** `/etc/default/grub`.
 * **Outputs:** A faster boot with no GRUB menu delay.
 * **Why it exists:** Removes the five second wait on single boot machines.
-* **Side effects:** Rewrites the boot configuration. Running it twice overwrites the backup with
-  the already edited file.
+* **Side effects:** Rewrites the boot configuration. The backup is only made once, so it always
+  holds the original file.
 
 ### install_numix_theme
 
@@ -194,35 +208,27 @@ All functions live in `debian-gnome-functions.sh` and take no arguments.
 * **Inputs:** The repository added by `prep_for_vscode_install`.
 * **Outputs:** VSCode installed.
 * **Why it exists:** Second half of the VSCode step. It only works after the repository is added.
-* **Side effects:** Network calls and system package changes. The final install prompts for
-  confirmation because it lacks `-y`.
+* **Side effects:** Network calls and system package changes.
 
 ### configure_git
 
 * **Does:** Copies `configs/.gitignore_global` to the home directory and sets global Git defaults
   for branch name, color, editor, pull behavior, and the excludes file.
-* **Inputs:** `configs/.gitignore_global`, relative to the current directory.
+* **Inputs:** `configs/.gitignore_global`.
 * **Outputs:** `~/.gitignore_global` and changes to `~/.gitconfig`.
 * **Why it exists:** Gives every new repository the same defaults.
 * **Side effects:** User file writes. Name and email are left for the user to set.
 
 ## Known limitations or sharp edges
 
-* **Working directory matters.** The setup script finds its own directory, but the functions read
-  `package_install.txt`, `package_remove.txt`, `wallpapers/`, and `configs/` relative to the
-  current directory. Run the script from the repository directory.
-* **No strict mode.** Neither script uses `set -euo pipefail`, so a failed step does not stop the
-  run. Option 13 keeps going after an error.
-* **Last line of a list.** `read` skips a final line with no trailing newline. Both list files
-  currently lack one, so `wget` is never installed and `tali` is never purged.
-* **Trailing spaces in the remove list.** Every line of `package_remove.txt` ends in spaces, which
-  `IFS=` keeps, so apt is likely to reject each name as unknown.
+* **Failures stop a step, not the run.** In option 13 a failed step prints an error and the next
+  step still runs. Scroll back to check for `failed with exit code` lines.
+* **List lines are taken literally.** Package lists have no comment syntax, and a line with
+  trailing spaces is passed to apt with the spaces.
 * **GRUB edit is narrow.** `speed_boot_time` only matches `GRUB_TIMEOUT=5`. Any other value is left
-  alone, and a second run replaces the backup with the edited file.
+  alone.
 * **Overwrites without asking.** `configure_vimrc` replaces `~/.vimrc` and `configure_git` replaces
   `~/.gitignore_global`.
-* **Prompts mid run.** `prep_for_vscode_install` and `install_vscode` call `apt-get install`
-  without `-y`, so option 13 stops for confirmation.
 * **CI fetches a remote script.** The ShellCheck workflow pipes a script from GitHub into Bash at
   run time, so the check depends on that external file.
 * **Manual steps remain.** The README lists GNOME extensions and shortcuts that are still done by
@@ -230,6 +236,7 @@ All functions live in `debian-gnome-functions.sh` and take no arguments.
 
 ## Change log
 
-| Date       | Summary                                                                  |
-| :--------- | :----------------------------------------------------------------------- |
-| 2026-11-01 | Added FUNCTIONALITY.md. Renamed scripts and `wallpapers/` to kebab-case. |
+| Date       | Summary                                                                                                   |
+| :--------- | :-------------------------------------------------------------------------------------------------------- |
+| 2026-11-01 | Added strict mode with per step error handling and fixed the package lists, GRUB backup, and apt prompts. |
+| 2026-11-01 | Added FUNCTIONALITY.md. Renamed scripts and `wallpapers/` to kebab-case.                                  |

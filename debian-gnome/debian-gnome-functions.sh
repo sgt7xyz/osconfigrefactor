@@ -16,16 +16,17 @@ update_debian() {
 
 # Package names live in package_install.txt so the list can change without editing code.
 install_packages() {
-    while IFS= read -r package; do
-        sudo apt-get -y install "$package"
+    # The -n test also reads a last line that has no trailing newline.
+    while IFS= read -r package || [ -n "$package" ]; do
+        sudo apt-get -y install "$package" || echo "Could not install $package, continuing." >&2
     done < package_install.txt
     echo 'Packages installed successfully!'
 }
 
 # Purges the default GNOME games and apps listed in package_remove.txt, then drops orphaned dependencies.
 remove_packages() {
-    while IFS= read -r package; do
-        sudo apt-get -y purge "$package"
+    while IFS= read -r package || [ -n "$package" ]; do
+        sudo apt-get -y purge "$package" || echo "Could not purge $package, continuing." >&2
     done < package_remove.txt
     sudo apt-get -y autoremove
     echo 'Packages removed successfully!'
@@ -92,13 +93,13 @@ configure_swappiness() {
     sudo /bin/su -c "echo 'vm.swappiness = 10' > /etc/sysctl.d/swappiness.conf"
     sudo sysctl -f /etc/sysctl.d/swappiness.conf
     echo 'swappiness after configuration:'
-    sudo sysctl -a | grep vm.swappiness
+    sysctl vm.swappiness
 }
 
 # 9. Speed up boot time.
-# Backs up the GRUB config first so the original timeout can be restored.
+# Backs up the GRUB config once, so a rerun cannot replace the original with an edited copy.
 speed_boot_time() {
-    sudo cp -p /etc/default/grub /etc/default/grub.original
+    [ -f /etc/default/grub.original ] || sudo cp -p /etc/default/grub /etc/default/grub.original
     sudo sed -i 's/GRUB_TIMEOUT=5/GRUB_TIMEOUT=0/g' /etc/default/grub
     sudo update-grub
     sudo grep GRUB_TIMEOUT /etc/default/grub
@@ -116,7 +117,7 @@ install_numix_theme() {
 # 11. Prep and install VSCode.
 # SECURITY: Adds the Microsoft signing key so apt verifies VSCode packages.
 prep_for_vscode_install() {
-    sudo apt-get install wget gpg
+    sudo apt-get -y install wget gpg
     wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
     sudo install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
     sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
@@ -128,7 +129,7 @@ prep_for_vscode_install() {
 install_vscode() {
     sudo apt-get -y install apt-transport-https
     sudo apt-get update
-    sudo apt-get install code
+    sudo apt-get -y install code
     echo 'VSScode installed successfully!'
 }
 

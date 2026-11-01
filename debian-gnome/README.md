@@ -152,16 +152,14 @@ Test full runs in a throwaway Debian VM before using them on a real machine.
 
 ## Troubleshooting
 
-| Problem                                          | Fix                                                    |
-| :----------------------------------------------- | :----------------------------------------------------- |
-| Wallpaper does not change after step 4           | Log out and back in. GNOME does not always refresh it. |
-| `package_install.txt: No such file or directory` | Run the script from the repository directory.          |
-| Last package in a list is skipped                | End the list file with a newline.                      |
+| Problem                                | Fix                                                          |
+| :------------------------------------- | :----------------------------------------------------------- |
+| A step prints `failed with exit code`  | Read the error above it, fix the cause, and rerun that step. |
+| Wallpaper does not change after step 4 | Log out and back in. GNOME does not always refresh it.       |
 
 ## Roadmap
 
 * Move more of the manual steps into the script.
-* Make the package list reads work from any directory.
 
 ## License
 

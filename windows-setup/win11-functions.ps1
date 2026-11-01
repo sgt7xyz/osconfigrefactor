@@ -49,7 +49,7 @@ function Install-Winget {
         Write-Host "Windows Package Manager installed successfully!"
     } catch {
         Write-Error "Failed to install Windows Package Manager. You may need to install it manually from the Microsoft Store."
-        exit
+        return
     }
 }
 
@@ -72,7 +72,7 @@ function Install-WingetPackages {
 
     if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
         Write-Error "winget is not installed. Please install Windows Package Manager."
-        exit
+        return
     }
 
     Write-Host "Installing winget packages..."
@@ -80,7 +80,7 @@ function Install-WingetPackages {
 
     if (-not (Test-Path $PackagesInstallFilePath)) {
         Write-Error "Warning: winget_install.txt not found!"
-        exit
+        return
     }
 
     $LogDir = Join-Path $ScriptDir 'logs'
@@ -134,7 +134,7 @@ function Uninstall-WingetPackages {
 
     if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
         Write-Error "winget is not installed. Please install Windows Package Manager."
-        exit
+        return
     }
 
     Write-Host "Uninstalling winget packages..."
@@ -142,7 +142,7 @@ function Uninstall-WingetPackages {
 
     if (-not (Test-Path $PackagesUninstallFilePath)) {
         Write-Error "Warning: winget_uninstall.txt not found!"
-        exit
+        return
     }
 
     $LogDir = Join-Path $ScriptDir 'logs'
@@ -185,7 +185,8 @@ function Install-Chrome {
     Write-Host "Installing Google Chrome..."
     $ChromePath = $env:TEMP
     $ChromeInstaller = "chrome_installer.exe"
-    Invoke-WebRequest "http://dl.google.com/chrome/chrome_installer.exe" -OutFile "$ChromePath\$ChromeInstaller"
+    # SECURITY: HTTPS so the installer that runs elevated cannot be swapped in transit.
+    Invoke-WebRequest "https://dl.google.com/chrome/chrome_installer.exe" -OutFile "$ChromePath\$ChromeInstaller"
     Start-Process -FilePath "$ChromePath\$ChromeInstaller" -Args "/silent /install" -Verb RunAs -Wait
     Remove-Item "$ChromePath\$ChromeInstaller"
     Write-Host "Google Chrome installed successfully!"
@@ -419,7 +420,6 @@ function Install-Git-Config {
     git config --global core.editor "code"
     git config --global pull.rebase false
     git config --global core.excludesfile "$env:USERPROFILE\.gitignore_global"
-    git config --global core.excludesfile "%USERPROFILE%\.gitignore_global"
     git config --global --list
     Write-Host "Base configuration for Git completed. Ensure you set your username and email!"
 }

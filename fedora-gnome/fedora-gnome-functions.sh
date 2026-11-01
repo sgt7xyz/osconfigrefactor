@@ -10,17 +10,23 @@
 # 1. Backup configs.
 # Keeps copies of the stock shell dotfiles before later steps change them.
 backup_configs() {
-  mkdir ~/.config-backups
-  cp ~/.bashrc ~/.config-backups
-  cp ~/.bash_profile ~/.config-backups
-  cp ~/.bash_logout ~/.config-backups
+    mkdir -p ~/.config-backups
+    local file
+    for file in ~/.bashrc ~/.bash_profile ~/.bash_logout; do
+        cp "$file" ~/.config-backups/ || echo "Warning: $file not found, skipping." >&2
+    done
+    echo 'Config files backed up successfully!'
 }
 
 # 2. Update DNF for faster downloads.
 # Parallel downloads and the fastest mirror cut the time of every later dnf step.
+# Each line is only added once, so the step is safe to rerun.
 update_dnf() {
-   echo 'max_parallel_downloads=10' | sudo tee -a /etc/dnf/dnf.conf > /dev/null
-   echo 'fastestmirror=true' | sudo tee -a /etc/dnf/dnf.conf > /dev/null
+    local setting
+    for setting in 'max_parallel_downloads=10' 'fastestmirror=true'; do
+        grep -qxF "$setting" /etc/dnf/dnf.conf || echo "$setting" | sudo tee -a /etc/dnf/dnf.conf > /dev/null
+    done
+    echo 'DNF configuration updated for faster downloads!'
 }
 
 # 3. Upgrade Fedora.
@@ -31,25 +37,27 @@ upgrade_fedora() {
 
 # 4. Update firmware.
 # Refreshes LVFS metadata first, because a stale cache hides available firmware updates.
+# NOTE: fwupdmgr exits with 2 when there is nothing to update, so that case is not an error.
 update_firmware() {
     sudo fwupdmgr refresh --force
-    sudo fwupdmgr get-updates
-    sudo fwupdmgr update
+    sudo fwupdmgr get-updates || echo 'No firmware updates available.'
+    sudo fwupdmgr update || echo 'No firmware updates applied.'
 }
 
 # 5. Install and remove packages.
 # Package names live in package_install.txt so the list can change without editing code.
 install_packages() {
-    while IFS= read -r package; do
-        sudo dnf -y install "$package"
+    # The -n test also reads a last line that has no trailing newline.
+    while IFS= read -r package || [ -n "$package" ]; do
+        sudo dnf -y install "$package" || echo "Could not install $package, continuing." >&2
     done < package_install.txt
     echo 'Packages installed successfully!'
 }
 
 # Removes unwanted packages listed in package_remove.txt, then drops orphaned dependencies.
 remove_packages() {
-    while IFS= read -r package; do
-        sudo dnf -y remove "$package"
+    while IFS= read -r package || [ -n "$package" ]; do
+        sudo dnf -y remove "$package" || echo "Could not remove $package, continuing." >&2
     done < package_remove.txt
     sudo dnf -y autoremove
     echo 'Packages removed successfully!'
@@ -97,21 +105,19 @@ create_directories() {
 # 11. Install fonts.
 # The Nerd Font provides the icon glyphs used by terminal prompts and themes.
 install_font() {
-    font_dir=(~/fonttmp)
-    font_url="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/DroidSansMono.zip"
-    mkdir -p $font_dir
+    local font_dir=~/fonttmp
+    local font_url="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/DroidSansMono.zip"
+    mkdir -p "$font_dir" ~/.local/share/fonts
     echo 'Downloading and Installing Fonts...'
-    cd $font_dir
-    curl -L $font_url -o "DroidSansMonoNerdFont.zip"
+    curl -fL "$font_url" -o "$font_dir/DroidSansMonoNerdFont.zip"
     echo "Unzipping the font..."
-    unzip "DroidSansMonoNerdFont.zip" -d "."
-    cp *.otf ~/.local/share/fonts/
+    unzip -o "$font_dir/DroidSansMonoNerdFont.zip" -d "$font_dir"
+    cp "$font_dir"/*.otf ~/.local/share/fonts/
     echo "Refreshing font cache..."
     fc-cache -f -v
     echo "Cleaning up..."
-    cd ..
-    rm -rf $font_dir
-    fc-list | grep -i DroidSansMNerdFont
+    rm -rf "$font_dir"
+    fc-list | grep -i DroidSansMNerdFont || echo 'Warning: the font is not listed by fc-list yet.' >&2
     echo 'Fonts installed successfully. Ensure you select the font in your terminal etc.'
 }
 
@@ -156,7 +162,8 @@ install_vscode() {
     sudo sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
     echo 'VSCode repository configured successfully!'
     
-    sudo dnf -y check-update
+    # NOTE: makecache refreshes metadata. dnf check-update exits with 100 when updates exist.
+    sudo dnf makecache
     sudo dnf -y install code
     echo 'VSCode installed successfully!'
 }
@@ -201,18 +208,15 @@ configure_swappiness() {
     sudo /bin/su -c "echo 'vm.swappiness = 10' > /etc/sysctl.d/swappiness.conf"
     sudo sysctl -f /etc/sysctl.d/swappiness.conf
     echo 'swappiness after configuration:'
-    sudo sysctl -a | grep vm.swappiness
+    sysctl vm.swappiness
 }
 
 # 20. Speed up boot time.
-# Backs up the GRUB config first so the original timeout can be restored.
+# Backs up the GRUB config once, so a rerun cannot replace the original with an edited copy.
 speed_boot_time() {
-    sudo cp -p /etc/default/grub /etc/default/grub.original
+    [ -f /etc/default/grub.original ] || sudo cp -p /etc/default/grub /etc/default/grub.original
     sudo sed -i 's/GRUB_TIMEOUT=5/GRUB_TIMEOUT=2/g' /etc/default/grub
     sudo grub2-mkconfig -o /boot/grub2/grub.cfg
     sudo grep GRUB_TIMEOUT /etc/default/grub
     echo 'Boot time speed configured successfully!'
 }
-
-
-

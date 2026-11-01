@@ -7,6 +7,8 @@
 # Author:   sgt7 LLC
 # ---------------------------------------------------------------
 
+set -euo pipefail
+
 # Resolve the repo directory so the functions file is found no matter where the script is run from.
 declare script_dir_path
 script_dir_path="$(dirname -- "$0")"
@@ -15,6 +17,23 @@ declare script_dir
 script_dir="$(realpath "$script_dir_path")"
 
 source "$script_dir"/fedora-gnome-functions.sh
+
+# The functions read package lists, configs, and wallpapers by relative path.
+cd "$script_dir"
+
+# Runs one step in a subshell with errexit on, so a failing command stops that step only and the
+# menu keeps running. The subshell also keeps a step's cd from leaking into later steps.
+# NOTE: Bash ignores errexit inside `|| ...` contexts, so errexit is paused here instead.
+run_step() {
+    local status
+    set +e
+    ( set -e; "$@" )
+    status=$?
+    set -e
+    if (( status != 0 )); then
+        echo "Step '$1' failed with exit code $status." >&2
+    fi
+}
 
 # Each menu number maps to one or more functions so steps can be rerun individually.
 while true; do
@@ -58,114 +77,114 @@ while true; do
     echo '0.  Exit'
     echo
     echo -n 'Enter the number of your choice: '
-    read choice
+    read -r choice
 
     case $choice in
         1)  
-            backup_configs
+            run_step backup_configs
             ;; 
             
         2)  
-            update_dnf
+            run_step update_dnf
             ;; 
 
         3)  
-            upgrade_fedora
+            run_step upgrade_fedora
             ;; 
     
         4)  
-            update_firmware
+            run_step update_firmware
             ;;
 
         5)  
-            install_packages
-            remove_packages
+            run_step install_packages
+            run_step remove_packages
             ;;
         
         6)  
-            enable_flathub
+            run_step enable_flathub
             ;;
         
         7)  
-            install_development_tools
+            run_step install_development_tools
             ;;
 
         8) 
-            install_codecs
+            run_step install_codecs
             ;;
 
         9) 
-            install_vlc_multimedia_codecs
+            run_step install_vlc_multimedia_codecs
             ;;
         
         10)  
-            create_directories
+            run_step create_directories
             ;;
             
         11)  
-            install_font
+            run_step install_font
             ;;
             
         12)  
-            copy_wallpapers
+            run_step copy_wallpapers
             ;;
 
         13) 
-            customize_gnome
+            run_step customize_gnome
             ;;
         
         14) 
-            configure_vimrc
+            run_step configure_vimrc
             ;;
 
         15) 
-            install_numix_theme
+            run_step install_numix_theme
             ;;
 
         16) 
-            install_vscode
+            run_step install_vscode
             ;;
 
         17) 
-            configure_git
+            run_step configure_git
             ;;
 
         18) 
-            install_firewalld_enable
+            run_step install_firewalld_enable
             ;;
 
         19) 
-            configure_swappiness
+            run_step configure_swappiness
             ;;
 
         20) 
-            speed_boot_time
+            run_step speed_boot_time
             ;;
 
         21) 
             echo 'Executing all setup steps...'
             echo
-            backup_configs
-            update_dnf
-            upgrade_fedora
-            update_firmware
-            install_packages
-            remove_packages
-            enable_flathub
-            install_development_tools
-            install_codecs
-            install_vlc_multimedia_codecs
-            create_directories
-            install_font
-            copy_wallpapers
-            customize_gnome
-            configure_vimrc
-            install_numix_theme
-            install_vscode
-            configure_git
-            install_firewalld_enable
-            configure_swappiness
-            speed_boot_time
+            run_step backup_configs
+            run_step update_dnf
+            run_step upgrade_fedora
+            run_step update_firmware
+            run_step install_packages
+            run_step remove_packages
+            run_step enable_flathub
+            run_step install_development_tools
+            run_step install_codecs
+            run_step install_vlc_multimedia_codecs
+            run_step create_directories
+            run_step install_font
+            run_step copy_wallpapers
+            run_step customize_gnome
+            run_step configure_vimrc
+            run_step install_numix_theme
+            run_step install_vscode
+            run_step configure_git
+            run_step install_firewalld_enable
+            run_step configure_swappiness
+            run_step speed_boot_time
             echo
             echo 'All setup steps completed!'
             ;;
@@ -178,8 +197,7 @@ while true; do
             echo 'Invalid option. Please try again.'
             ;;
     esac
-    
     echo
     echo 'Press Enter to continue...'
-    read
+    read -r
 done

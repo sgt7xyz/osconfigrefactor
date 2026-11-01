@@ -10,10 +10,12 @@
 # 1. Backup configs, update, install, and remove packages.
 # Keeps copies of the stock shell dotfiles before later steps or stow can replace them.
 backup_configs() {
-  mkdir ~/.config-backups
-  cp ~/.bashrc ~/.config-backups
-  cp ~/.profile ~/.config-backups
-  cp ~/.bash_logout ~/.config-backups
+    mkdir -p ~/.config-backups
+    local file
+    for file in ~/.bashrc ~/.profile ~/.bash_logout; do
+        cp "$file" ~/.config-backups/ || echo "Warning: $file not found, skipping." >&2
+    done
+    echo 'Config files backed up successfully!'
 }
 
 update_debian() {
@@ -24,16 +26,17 @@ update_debian() {
 
 # Package names live in package_install.txt so the list can change without editing code.
 install_packages() {
-    while IFS= read -r package; do
-        sudo apt-get -y install "$package"
+    # The -n test also reads a last line that has no trailing newline.
+    while IFS= read -r package || [ -n "$package" ]; do
+        sudo apt-get -y install "$package" || echo "Could not install $package, continuing." >&2
     done < package_install.txt
     echo 'Packages installed successfully!'
 }
 
 # Purges unwanted packages listed in package_remove.txt, then drops orphaned dependencies.
 remove_packages() {
-    while IFS= read -r package; do
-        sudo apt-get -y purge "$package"
+    while IFS= read -r package || [ -n "$package" ]; do
+        sudo apt-get -y purge "$package" || echo "Could not purge $package, continuing." >&2
     done < package_remove.txt
     sudo apt-get -y autoremove
     echo 'Packages removed successfully!'
@@ -51,18 +54,16 @@ create_directories() {
 # 3. Install fonts.
 # The Nerd Font provides the glyphs that polybar and the terminal theme rely on.
 install_font() {
-    font_dir=(~/fonttmp)
-    font_url="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/DroidSansMono.zip"
-    mkdir -p $font_dir
+    local font_dir=~/fonttmp
+    local font_url="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/DroidSansMono.zip"
+    mkdir -p "$font_dir" ~/.local/share/fonts
     echo 'Downloading and Installing Fonts...'
-    cd $font_dir
-    curl -L $font_url -o "DroidSansMonoNerdFont.zip"
+    curl -fL "$font_url" -o "$font_dir/DroidSansMonoNerdFont.zip"
     echo "Unzipping the font..."
-    unzip "DroidSansMonoNerdFont.zip" -d "."
-    cp *.otf ~/.local/share/fonts/
+    unzip -o "$font_dir/DroidSansMonoNerdFont.zip" -d "$font_dir"
+    cp "$font_dir"/*.otf ~/.local/share/fonts/
     echo "Cleaning up..."
-    cd ..
-    rm -rf $font_dir
+    rm -rf "$font_dir"
     echo 'Fonts installed successfully. Ensure you select the font in your terminal etc.'
 }
 
@@ -88,6 +89,7 @@ customize_tiling() {
     
     #cp configs/picom.conf ~/.config/picom.conf
     #cp configs/i3config ~/.config/i3/config
+    mkdir -p ~/.config/alacritty ~/scripts
     cp configs/alacritty/alacritty.yml ~/.config/alacritty/alacritty.yml
     #cp configs/alacritty/catppuccin-macchiato.yml ~/.config/alacritty/catppuccin-macchiato.yml
     #cp configs/polybar/config.ini ~/.config/polybar/config.ini
@@ -108,12 +110,14 @@ customize_tiling() {
 # 7. Customize vimrc file settings.
 # NOTE: This overwrites any existing ~/.vimrc. The bell settings silence the terminal beep.
 configure_vimrc() {
-    echo "set noerrorbells" > ~/.vimrc
-    echo "set visualbell" >> ~/.vimrc
-    echo "set t_vb=" >> ~/.vimrc
-    echo "syntax on" >> ~/.vimrc
-    echo "set number" >> ~/.vimrc
-    echo "set mouse=r" >> ~/.vimrc
+    cat > ~/.vimrc <<'VIMRC'
+set noerrorbells
+set visualbell
+set t_vb=
+syntax on
+set number
+set mouse=r
+VIMRC
     echo 'Vim customized successfully!'
 }
 
@@ -143,13 +147,13 @@ configure_swappiness() {
     sudo /bin/su -c "echo 'vm.swappiness = 10' > /etc/sysctl.d/swappiness.conf"
     sudo sysctl -f /etc/sysctl.d/swappiness.conf
     echo 'swappiness after configuration:'
-    sudo sysctl -a | grep vm.swappiness
+    sysctl vm.swappiness
 }
 
 # 11. Speed up boot time.
-# Backs up the GRUB config first so the original timeout can be restored.
+# Backs up the GRUB config once, so a rerun cannot replace the original with an edited copy.
 speed_boot_time() {
-    sudo cp /etc/default/grub /etc/default/grub.original
+    [ -f /etc/default/grub.original ] || sudo cp -p /etc/default/grub /etc/default/grub.original
     sudo sed -i 's/GRUB_TIMEOUT=5/GRUB_TIMEOUT=0/g' /etc/default/grub
     sudo update-grub
     sudo grep GRUB_TIMEOUT /etc/default/grub

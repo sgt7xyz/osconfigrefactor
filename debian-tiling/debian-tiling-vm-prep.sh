@@ -7,10 +7,12 @@
 # Author:   sgt7 LLC
 # ---------------------------------------------------------------
 
+set -euo pipefail
+
 # Run this only inside a VirtualBox test VM, never on real hardware.
 
 sudo apt-get update && sudo apt-get -y upgrade
 
 # Guest Additions need DKMS and headers that match the running kernel to build their modules.
 sudo apt-get -y install dkms
-sudo apt-get -y install linux-headers-$(uname -r)
+sudo apt-get -y install "linux-headers-$(uname -r)"

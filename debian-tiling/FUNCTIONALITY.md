@@ -53,6 +53,10 @@ Read the files in this order.
 It resolves its own directory with `dirname` and `realpath` so the functions file is always found.
 Option 1 runs four functions together and option 12 runs two.
 
+The script runs with `set -euo pipefail` and changes into the repository directory, so the data
+files are found wherever it is started from. Every function call goes through `run_step`, so a
+failing command stops only that step and the menu keeps running.
+
 ### debian-tiling-functions.sh
 
 **Purpose:** Holds one function per setup step. It defines functions only and has no top level
@@ -64,6 +68,7 @@ files in the repository.
 ### debian-tiling-vm-prep.sh
 
 **Purpose:** Updates the system and installs `dkms` plus kernel headers for the running kernel.
+It runs with `set -euo pipefail`.
 
 **Depends on:** `apt-get`. Meant only for a VirtualBox test VM.
 
@@ -91,7 +96,8 @@ Python build dependencies, and command line utilities. The remove list holds `ai
 ### configs/polybar/launch.sh
 
 **Purpose:** Stops running bars over IPC, then starts `bar1` and appends its output to
-`/tmp/polybar1.log`.
+`/tmp/polybar1.log`. It runs in strict mode, so the stop command is allowed to fail when no bar is
+running yet.
 
 **Depends on:** `enable-ipc` in the polybar config. Called by `exec_always` in `i3config`.
 
@@ -103,20 +109,31 @@ Python build dependencies, and command line utilities. The remove list holds `ai
   capped at 150 percent.
 * `system-update.sh` runs `apt-get update` and `apt-get upgrade`.
 
+Each helper runs with `set -euo pipefail`, so it stops at the first failed command.
+
 **Depends on:** `wpctl` from WirePlumber, and `apt-get`.
 
 ## Function entries
 
-All functions live in `debian-tiling-functions.sh` and take no arguments.
+### run_step
+
+* **Does:** Runs one step function in a subshell with errexit on, then prints the exit code if the
+  step failed.
+* **Inputs:** The function name to run.
+* **Outputs:** The step's output, plus an error line on failure.
+* **Why it exists:** Under `set -e` alone, any failing command would close the whole menu. Bash
+  also ignores errexit inside `||` lists, so the helper pauses errexit in the menu shell instead.
+* **Side effects:** None of its own. A `cd` or variable change inside a step stays in its subshell.
+
+All other functions live in `debian-tiling-functions.sh` and take no arguments.
 
 ### backup_configs
 
 * **Does:** Copies `~/.bashrc`, `~/.profile`, and `~/.bash_logout` into `~/.config-backups`.
 * **Inputs:** Those three files.
-* **Outputs:** A backup directory.
+* **Outputs:** A backup directory, with a warning for each file that is missing.
 * **Why it exists:** Keeps the stock dotfiles in case `stow` or a later step replaces them.
-* **Side effects:** File writes. A second run reports that the directory exists and overwrites the
-  earlier backups.
+* **Side effects:** File writes. Safe to rerun, but it overwrites the earlier backups.
 
 ### update_debian
 
@@ -129,7 +146,7 @@ All functions live in `debian-tiling-functions.sh` and take no arguments.
 ### install_packages
 
 * **Does:** Installs each package in `package_install.txt`, one at a time.
-* **Inputs:** `package_install.txt`, read from the current working directory.
+* **Inputs:** `package_install.txt`. A package that fails to install is reported and skipped.
 * **Outputs:** Installed packages.
 * **Why it exists:** Keeps the package list in data instead of code.
 * **Side effects:** Network calls and system package changes through `sudo`.
@@ -137,7 +154,7 @@ All functions live in `debian-tiling-functions.sh` and take no arguments.
 ### remove_packages
 
 * **Does:** Purges each package in `package_remove.txt`, then runs `apt-get autoremove`.
-* **Inputs:** `package_remove.txt`, read from the current working directory.
+* **Inputs:** `package_remove.txt`. A package that fails to purge is reported and skipped.
 * **Outputs:** Removed packages.
 * **Why it exists:** Removes software that is not wanted on the desktop.
 * **Side effects:** System package removal through `sudo`.
@@ -158,8 +175,8 @@ All functions live in `debian-tiling-functions.sh` and take no arguments.
 * **Inputs:** A pinned GitHub release URL.
 * **Outputs:** Installed user fonts.
 * **Why it exists:** Polybar and the terminal theme use Nerd Font glyphs.
-* **Side effects:** Network call and file writes. It changes the working directory and leaves the
-  shell in the home directory, not the repository.
+* **Side effects:** Network call and file writes. It works with full paths and never changes the
+  working directory.
 
 ### configure_console
 
@@ -172,15 +189,15 @@ All functions live in `debian-tiling-functions.sh` and take no arguments.
 ### copy_wallpapers
 
 * **Does:** Copies every file in `wallpapers/` to `~/Pictures/wallpapers/`.
-* **Inputs:** `wallpapers/`, relative to the current directory.
+* **Inputs:** `wallpapers/`.
 * **Outputs:** Image files.
 * **Why it exists:** `i3config` sets the wallpaper from this folder with feh.
 * **Side effects:** File writes.
 
 ### customize_tiling
 
-* **Does:** Copies `configs/alacritty/alacritty.yml` to `~/.config/alacritty/` and the two volume
-  scripts to `~/scripts/`.
+* **Does:** Creates `~/.config/alacritty` and `~/scripts` if needed, then copies
+  `configs/alacritty/alacritty.yml` and the two volume scripts into them.
 * **Inputs:** Files under `configs/` and `scripts/`.
 * **Outputs:** Three copied files.
 * **Why it exists:** Installs the terminal config and the volume helpers.
@@ -226,8 +243,7 @@ All functions live in `debian-tiling-functions.sh` and take no arguments.
 * **Inputs:** `/etc/default/grub`.
 * **Outputs:** No GRUB menu delay at boot.
 * **Why it exists:** Removes the boot wait on single boot machines.
-* **Side effects:** Boot configuration change. A second run overwrites the backup with the edited
-  file.
+* **Side effects:** Boot configuration change. The backup is only made once.
 
 ### prep_for_vscode_install
 
@@ -249,18 +265,15 @@ All functions live in `debian-tiling-functions.sh` and take no arguments.
 ### configure_git
 
 * **Does:** Copies `configs/.gitignore_global` to the home directory and sets global Git defaults.
-* **Inputs:** `configs/.gitignore_global`, relative to the current directory.
+* **Inputs:** `configs/.gitignore_global`.
 * **Outputs:** `~/.gitignore_global` and changes to `~/.gitconfig`.
 * **Why it exists:** Gives every new repository the same defaults.
 * **Side effects:** User file writes. Name and email are left for the user.
 
 ## Known limitations or sharp edges
 
-* **Execute all loses the repo directory.** `install_font` runs `cd` and ends in the home
-  directory. In option 15, every later step that reads `./wallpapers`, `configs/`, or `scripts/`
-  then fails. Run steps 5 to 13 one at a time from the repository directory, or rerun the script.
-* **Alacritty folder is not created.** `customize_tiling` copies into `~/.config/alacritty`, but
-  the line that creates it is commented out, so the copy fails on a fresh install.
+* **Failures stop a step, not the run.** In option 15 a failed step prints an error and the next
+  step still runs. Scroll back to check for `failed with exit code` lines.
 * **Most configs are not installed.** i3, polybar, rofi, picom, and X configs must be copied or
   stowed by hand. The function still contains the commented out copy lines.
 * **Old Alacritty format.** The function copies `alacritty.yml`. Alacritty 0.13 and newer reads only
@@ -268,13 +281,11 @@ All functions live in `debian-tiling-functions.sh` and take no arguments.
 * **Mixed audio tools.** The volume scripts use `wpctl`, but the media key bindings in `i3config`
   use `pactl`.
 * **Unused helper.** `scripts/system-update.sh` is not copied anywhere by the setup script.
-* **No strict mode.** No script uses `set -euo pipefail`, so failures do not stop a run.
-* **Working directory matters.** Data files are read relative to the current directory.
-* **Last line of a list.** `read` skips a final line with no trailing newline.
 * **No CI.** Unlike debian-gnome, this repository has no ShellCheck workflow.
 
 ## Change log
 
-| Date       | Summary                                                    |
-| :--------- | :--------------------------------------------------------- |
-| 2026-11-01 | Added FUNCTIONALITY.md. Renamed all scripts to kebab-case. |
+| Date       | Summary                                                                                                    |
+| :--------- | :--------------------------------------------------------------------------------------------------------- |
+| 2026-11-01 | Added strict mode with per step error handling and fixed the font step, alacritty folder, and GRUB backup. |
+| 2026-11-01 | Added FUNCTIONALITY.md. Renamed all scripts to kebab-case.                                                 |

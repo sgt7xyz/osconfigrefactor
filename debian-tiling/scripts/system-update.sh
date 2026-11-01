@@ -7,6 +7,6 @@
 # Author:   sgt7 LLC
 # ---------------------------------------------------------------
 
+set -euo pipefail
+
 sudo apt-get update && sudo apt-get -y upgrade
-
-

@@ -7,11 +7,11 @@
 # Author:   sgt7 LLC
 # ---------------------------------------------------------------
 
+set -euo pipefail
+
 # Run this only inside a VirtualBox test VM, never on real hardware.
 
-sudo dnf update && sudo dnf -y upgrade
+sudo dnf -y upgrade
 
 # Guest Additions need DKMS and kernel headers to build their modules.
-sudo dnf install -y install dkms
-sudo dnf install -y install linux-headers
-sudo dnf install -y install kernel-devel
+sudo dnf -y install dkms kernel-headers kernel-devel

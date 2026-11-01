@@ -140,12 +140,11 @@ Test full runs in a throwaway Fedora VM before using them on a real machine.
 
 ## Troubleshooting
 
-| Problem                                       | Fix                                                    |
-| :-------------------------------------------- | :----------------------------------------------------- |
-| `package_install.txt not found` warning       | Run the script from the repository directory.          |
-| `docker` commands fail with permission denied | Reboot after step 21 so the group change takes effect. |
-| VirtualBox USB devices are missing            | Log out and back in after step 22.                     |
-| Last package in a list is skipped             | End the list file with a newline.                      |
+| Problem                                       | Fix                                                          |
+| :-------------------------------------------- | :----------------------------------------------------------- |
+| A step prints `failed with exit code`         | Read the error above it, fix the cause, and rerun that step. |
+| `docker` commands fail with permission denied | Reboot after step 21 so the group change takes effect.       |
+| VirtualBox USB devices are missing            | Log out and back in after step 22.                           |
 
 ## Roadmap
 

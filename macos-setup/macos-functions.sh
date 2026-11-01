@@ -98,7 +98,7 @@ install_homebrew() {
     local cmd_to_run='/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
     
     if prompt_for_security_risk "$cmd_to_run" "$user_ack"; then
-        (echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> /Users/steven/.zprofile
+        (echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> "$HOME/.zprofile"
         eval "$(/opt/homebrew/bin/brew shellenv)"
         echo 'Homebrew installed successfully.'
     fi
@@ -111,7 +111,7 @@ install_homebrew_packages() {
     local app_list="brew_install_list.txt"
     if ! command -v brew &> /dev/null; then
         echo "Homebrew not installed. Please install Homebrew first."
-        exit 1
+        return 1
     fi
     
     while IFS= read -r app || [[ -n "$app" ]]; do

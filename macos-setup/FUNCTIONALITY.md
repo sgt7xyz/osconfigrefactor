@@ -55,8 +55,9 @@ function or the network script.
 **Depends on:** `macos-functions.sh` and `macos-network.sh`.
 
 `log_execution` appends a timestamped line to the log file in the current directory. For option 17
-it asks once whether remote install scripts may run, then passes that answer to the three functions
-that use `curl | sh` so they do not prompt again.
+it asks once, with a single key press through zsh `read -q`, whether remote install scripts may
+run. It then passes that answer to the three functions that use `curl | sh` so they do not prompt
+again.
 
 ### macos-functions.sh
 
@@ -162,8 +163,7 @@ Functions in `macos-functions.sh` take no arguments unless stated.
 * **Inputs:** An optional `y` or `n` from option 17.
 * **Outputs:** Homebrew installed under `/opt/homebrew`.
 * **Why it exists:** Homebrew installs the command line tools in the next step.
-* **Side effects:** Network call, runs a remote script, and appends to a hardcoded
-  `/Users/steven/.zprofile` path.
+* **Side effects:** Network call, runs a remote script, and appends to `~/.zprofile`.
 
 ### install_homebrew_packages
 
@@ -172,8 +172,7 @@ Functions in `macos-functions.sh` take no arguments unless stated.
 * **Inputs:** `brew_install_list.txt`, read from the current working directory.
 * **Outputs:** Installed formulae.
 * **Why it exists:** Keeps the tool list in data instead of code.
-* **Side effects:** Network calls and file writes. If Homebrew is missing it calls `exit 1`, which
-  ends the whole menu script.
+* **Side effects:** Network calls and file writes. Returns 1 if Homebrew is missing.
 
 ### install_mise
 
@@ -259,30 +258,26 @@ Functions in `macos-functions.sh` take no arguments unless stated.
 
 ## Known limitations or sharp edges
 
-* **Hardcoded home path.** `install_homebrew` writes to `/Users/steven/.zprofile` instead of
-  `$HOME/.zprofile`, so it fails or writes to the wrong place for any other user.
 * **Apple Silicon only.** The Homebrew shellenv line assumes `/opt/homebrew`. Intel Macs use
   `/usr/local`.
-* **Execute All prompt syntax.** Option 17 uses Bash style `read -p ... -n 1 -r`. In zsh, `-p`
-  reads from a coprocess, so the approval prompt is likely to fail. The zsh form used elsewhere is
-  `read "reply?Prompt "`.
-* **Network script not executable.** `macos-network.sh` is stored without the execute bit. Option
-  11 then prints an error, and option 17 skips DNS without saying so, unless the README `chmod`
-  step was run.
-* **Exit inside a sourced function.** `install_homebrew_packages` calls `exit 1`, which ends the
-  whole menu instead of returning.
+* **Network script must stay executable.** Option 11 only runs `macos-network.sh` if it has the
+  execute bit, and option 17 skips DNS without saying so if it does not. The bit is stored in Git,
+  and the README `chmod` step sets it again.
 * **Installer does not wait.** `install_xcode_clt` returns before the GUI install finishes.
 * **Oh My Zsh starts a new shell.** By default its installer opens a new zsh session at the end,
   and the setup script only continues after you exit that shell.
 * **Working directory matters.** The tool lists, `configs/.gitignore_global`, the font temp folder,
   and the log file all use the current directory. Only `configure_themes` uses `$script_dir`.
-* **No strict mode in the menu.** Only `macos-network.sh` sets `NO_UNSET`. The menu and functions
-  keep going after errors.
+* **No strict mode in the menu.** Only `macos-network.sh` sets `NO_UNSET`. The menu does not turn
+  on `ERR_EXIT` or `NO_UNSET`, because its steps share shell state (the Homebrew `PATH` and
+  `SIP_DISABLED`) and source `~/.zshrc`, and Oh My Zsh is not written for `NO_UNSET`. The menu
+  keeps going after errors.
 * **No linting in CI.** ShellCheck does not support zsh. The README suggests `zsh -n` for a syntax
   check.
 
 ## Change log
 
-| Date       | Summary                                                                                  |
-| :--------- | :--------------------------------------------------------------------------------------- |
-| 2026-11-01 | Added FUNCTIONALITY.md. Renamed scripts to kebab-case and `img/` to `images/`.           |
+| Date       | Summary                                                                          |
+| :--------- | :------------------------------------------------------------------------------- |
+| 2026-11-01 | Fixed the `.zprofile` path, the Execute All prompt, and the network script mode. |
+| 2026-11-01 | Added FUNCTIONALITY.md. Renamed scripts to kebab-case and `img/` to `images/`.   |

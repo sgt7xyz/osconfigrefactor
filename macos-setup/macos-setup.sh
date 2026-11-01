@@ -150,14 +150,13 @@ while true; do
             # SECURITY: Ask once up front so remote install scripts never run without consent.
             echo "The 'Execute All' option includes steps that execute scripts from the internet via 'curl | sh'."
             echo "This can be a security risk."
-            local user_ack_unsafe
-            read -p "Do you want to approve all of these for this run? (y/n) " -n 1 -r reply
-            echo
-            if [[ "$reply" =~ ^[Yy]$ ]]; then
+            # NOTE: zsh read -q takes one key and succeeds only for y or Y.
+            if read -q "?Do you want to approve all of these for this run? (y/n) "; then
                 user_ack_unsafe="y"
             else
                 user_ack_unsafe="n"
             fi
+            echo
 
             log_execution "update_patch_mac"
             update_patch_mac

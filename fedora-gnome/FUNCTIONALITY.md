@@ -42,6 +42,10 @@ Read the files in this order.
 It resolves its own directory with `dirname` and `realpath` so the functions file is always found.
 Option 5 runs the install and remove functions together. Every other option maps to one function.
 
+The script runs with `set -euo pipefail` and changes into the repository directory, so the data
+files are found wherever it is started from. Every function call goes through `run_step`, so a
+failing command stops only that step and the menu keeps running.
+
 ### fedora-gnome-functions.sh
 
 **Purpose:** Holds one function per setup step. It defines functions only and has no top level
@@ -71,24 +75,34 @@ app, dconf-editor, fastfetch, nmap, Tilix, and Vim. The remove list holds `tali`
 
 ## Function entries
 
-All functions live in `fedora-gnome-functions.sh` and take no arguments.
+### run_step
+
+* **Does:** Runs one step function in a subshell with errexit on, then prints the exit code if the
+  step failed.
+* **Inputs:** The function name to run.
+* **Outputs:** The step's output, plus an error line on failure.
+* **Why it exists:** Under `set -e` alone, any failing command would close the whole menu. Bash
+  also ignores errexit inside `||` lists, so the helper pauses errexit in the menu shell instead.
+* **Side effects:** None of its own. A `cd` or variable change inside a step stays in its subshell.
+
+All other functions live in `fedora-gnome-functions.sh` and take no arguments.
 
 ### backup_configs
 
 * **Does:** Copies `~/.bashrc`, `~/.bash_profile`, and `~/.bash_logout` into `~/.config-backups`.
 * **Inputs:** Those three files.
-* **Outputs:** A backup directory.
+* **Outputs:** A backup directory, with a warning for each file that is missing.
 * **Why it exists:** Keeps the stock dotfiles before later steps change the home directory.
-* **Side effects:** File writes. A second run prints a `File exists` error from `mkdir` and then
-  overwrites the earlier backups.
+* **Side effects:** File writes. Safe to rerun, but it overwrites the earlier backups.
 
 ### update_dnf
 
-* **Does:** Appends `max_parallel_downloads=10` and `fastestmirror=true` to `/etc/dnf/dnf.conf`.
+* **Does:** Adds `max_parallel_downloads=10` and `fastestmirror=true` to `/etc/dnf/dnf.conf` if
+  they are not already there.
 * **Inputs:** None.
 * **Outputs:** A changed dnf config.
 * **Why it exists:** Shortens every later dnf step.
-* **Side effects:** System file write. Each run appends the lines again.
+* **Side effects:** System file write. Safe to rerun.
 
 ### upgrade_fedora
 
@@ -105,11 +119,13 @@ All functions live in `fedora-gnome-functions.sh` and take no arguments.
 * **Outputs:** Updated device firmware where supported.
 * **Why it exists:** A stale metadata cache hides available firmware updates.
 * **Side effects:** Network calls and firmware writes. May ask for confirmation or a reboot.
+  `fwupdmgr` exits with 2 when there is nothing to do, so a non-zero exit there only prints a
+  message.
 
 ### install_packages
 
 * **Does:** Installs each package in `package_install.txt`, one at a time.
-* **Inputs:** `package_install.txt`, read from the current working directory.
+* **Inputs:** `package_install.txt`. A package that fails to install is reported and skipped.
 * **Outputs:** Installed packages.
 * **Why it exists:** Keeps the package list in data instead of code.
 * **Side effects:** Network calls and system package changes.
@@ -117,7 +133,7 @@ All functions live in `fedora-gnome-functions.sh` and take no arguments.
 ### remove_packages
 
 * **Does:** Removes each package in `package_remove.txt`, then runs `dnf autoremove`.
-* **Inputs:** `package_remove.txt`, read from the current working directory.
+* **Inputs:** `package_remove.txt`. A package that fails to remove is reported and skipped.
 * **Outputs:** Removed packages.
 * **Why it exists:** Clears out unwanted default software.
 * **Side effects:** System package removal.
@@ -171,13 +187,13 @@ All functions live in `fedora-gnome-functions.sh` and take no arguments.
 * **Inputs:** A pinned GitHub release URL.
 * **Outputs:** Installed user fonts and a list of the matching font names.
 * **Why it exists:** Terminal prompts and themes use Nerd Font glyphs.
-* **Side effects:** Network call and file writes. It changes the working directory and leaves the
-  shell in the home directory, not the repository.
+* **Side effects:** Network call and file writes. It works with full paths and never changes the
+  working directory.
 
 ### copy_wallpapers
 
 * **Does:** Copies every file in `wallpapers/` to `~/Pictures/wallpapers`.
-* **Inputs:** `wallpapers/`, relative to the current directory.
+* **Inputs:** `wallpapers/`.
 * **Outputs:** Image files.
 * **Why it exists:** `customize_gnome` points GNOME at one of these copies.
 * **Side effects:** File writes.
@@ -210,7 +226,7 @@ All functions live in `fedora-gnome-functions.sh` and take no arguments.
 ### install_vscode
 
 * **Does:** Imports the Microsoft signing key, writes `/etc/yum.repos.d/vscode.repo` with
-  `gpgcheck=1`, and installs the `code` package.
+  `gpgcheck=1`, refreshes metadata with `dnf makecache`, and installs the `code` package.
 * **Inputs:** None.
 * **Outputs:** VSCode installed from Microsoft's repository.
 * **Why it exists:** VSCode is not in the Fedora repositories. The key lets dnf verify packages.
@@ -220,7 +236,7 @@ All functions live in `fedora-gnome-functions.sh` and take no arguments.
 
 * **Does:** Copies `configs/.gitignore_global` to the home directory if found, sets global Git
   defaults, and prints the resulting config.
-* **Inputs:** `configs/.gitignore_global`, relative to the current directory.
+* **Inputs:** `configs/.gitignore_global`.
 * **Outputs:** `~/.gitignore_global` and changes to `~/.gitconfig`.
 * **Why it exists:** Gives every new repository the same defaults.
 * **Side effects:** User file writes. If the ignore file is missing it only warns, and Git still
@@ -250,26 +266,21 @@ All functions live in `fedora-gnome-functions.sh` and take no arguments.
 * **Inputs:** `/etc/default/grub`.
 * **Outputs:** A shorter boot menu delay.
 * **Why it exists:** Speeds up boot while still leaving time to pick a kernel.
-* **Side effects:** Boot configuration change. A second run overwrites the backup with the edited
-  file.
+* **Side effects:** Boot configuration change. The backup is only made once.
 
 ## Known limitations or sharp edges
 
-* **Execute all loses the repo directory.** `install_font` runs `cd` and ends in the home
-  directory. In option 21, `copy_wallpapers` and `configure_git` then cannot find `wallpapers/` or
-  `configs/`.
-* **List files lack a trailing newline.** `read` skips the last line, so `vim` is never installed
-  and `tali` is never removed. Line 4 of `package_install.txt` also ends with a space.
+* **Failures stop a step, not the run.** In option 21 a failed step prints an error and the next
+  step still runs. Scroll back to check for `failed with exit code` lines.
 * **Codecs need RPM Fusion.** `install_codecs` swaps to the full `ffmpeg`, which normally comes
-  from RPM Fusion. Nothing in the script enables it.
-* **Appends are not idempotent.** `update_dnf` adds duplicate lines on every run.
+  from RPM Fusion. Nothing in the script enables it, so on a stock install this step reports a
+  failure.
 * **Unused directory.** `~/.config/tilix/schemes` is created but nothing is copied into it yet.
-* **No strict mode.** No script uses `set -euo pipefail`, so failures do not stop a run.
-* **Working directory matters.** Data files are read relative to the current directory.
 * **CI fetches a remote script.** The ShellCheck workflow pipes a script from GitHub into Bash.
 
 ## Change log
 
-| Date       | Summary                                                                 |
-| :--------- | :---------------------------------------------------------------------- |
-| 2026-11-01 | Added FUNCTIONALITY.md. Renamed scripts to kebab-case.                  |
+| Date       | Summary                                                                                                  |
+| :--------- | :------------------------------------------------------------------------------------------------------- |
+| 2026-11-01 | Added strict mode with per step error handling and fixed the package lists, font step, and dnf settings. |
+| 2026-11-01 | Added FUNCTIONALITY.md. Renamed scripts to kebab-case.                                                   |
