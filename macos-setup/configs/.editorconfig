@@ -1,0 +1,40 @@
+# ---------------------------------------------------------------
+# File:     .editorconfig
+# Purpose:  Keep indentation, line endings, and whitespace consistent across editors
+# Project:  project-standards-kit
+# Author:   sgt7 LLC
+# ---------------------------------------------------------------
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# Python formatting is owned by ruff format, which uses 4 spaces.
+[*.py]
+indent_size = 4
+
+# Shell scripts use 2 spaces to match the examples in AGENTS.md.
+[*.sh]
+indent_size = 2
+
+# Terraform formatting is owned by terraform fmt, which uses 2 spaces.
+[*.{tf,tfvars,hcl}]
+indent_size = 2
+
+# NOTE: Makefiles require real tabs.
+[Makefile]
+indent_style = tab
+
+# NOTE: Go uses tabs by convention and gofmt enforces it.
+[*.go]
+indent_style = tab
+
+# Markdown follows AGENTS.md section 4, so trailing whitespace is still trimmed.
+[*.md]
+trim_trailing_whitespace = true

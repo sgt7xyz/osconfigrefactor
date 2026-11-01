@@ -1,0 +1,14 @@
+bash-completion
+build-essential
+curl
+debian-reference-en
+dconf-editor
+git
+neofetch
+nmap
+tcpdump
+tilix
+tmux
+tree
+vim
+wget

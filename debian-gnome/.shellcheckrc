@@ -1,0 +1,3 @@
+# Don't suggest SC1091 (info): Not following: ./functions.sh was not specified as input (see shellcheck -x).
+# This script is picked up and scanned by shell extension, so it's not necessary to specify it as input.
+disable=SC1091

@@ -1,0 +1,26 @@
+import:
+  - ~/.config/alacritty/catppuccin-macchiato.yml
+env:
+  TERM: xterm-256color
+font:
+  size: 13
+  bold:
+    family: DroidSansM Nerd Font
+    style: Bold
+  bold_italic:
+    family: DroidSansM Nerd Font
+    style: Bold Italic
+  italic:
+    family: DroidSansM Nerd Font
+    style: Italic
+  normal:
+    family: DroidSansM Nerd Font
+    style: Regular
+window:
+  opacity: 0.9
+  blur: false
+  dynamic_title: false
+  dynamic_padding: true
+  decorations_theme_variant: None
+  resize_increments: false
+  option_as_alt: None

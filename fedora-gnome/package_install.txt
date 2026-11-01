@@ -1,0 +1,7 @@
+dconf-editor
+gnome-tweaks
+fastfetch
+gnome-extensions-app 
+nmap
+tilix
+vim

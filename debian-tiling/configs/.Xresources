@@ -1,0 +1,13 @@
+! .Xresources configuration for Dell U2723QE
+
+! Display settings
+Xft.dpi: 144
+Xft.antialias: true
+Xft.hinting: true
+Xft.rgba: rgb
+Xft.autohint: false
+Xft.hintstyle: hintslight
+Xft.lcdfilter: lcddefault
+
+! Font settings
+*font: xft:DroidSansM Nerd Font:size=10
