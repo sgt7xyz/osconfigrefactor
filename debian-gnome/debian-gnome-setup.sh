@@ -1,14 +1,22 @@
 #!/usr/bin/env bash
 
+# ---------------------------------------------------------------
+# File:     debian-gnome-setup.sh
+# Purpose:  Interactive menu that runs the Debian GNOME post-install setup steps
+# Project:  debian-gnome-sgt7
+# Author:   sgt7 LLC
+# ---------------------------------------------------------------
+
+# Resolve the repo directory so the functions file is found no matter where the script is run from.
 declare script_dir_path
 script_dir_path="$(dirname -- "$0")"
 
 declare script_dir
 script_dir="$(realpath "$script_dir_path")"
 
-source "$script_dir"/functions.sh
+source "$script_dir"/debian-gnome-functions.sh
 
-# Menu for selecting the installation steps
+# Each menu number maps to one or more functions so steps can be rerun individually.
 while true; do
     echo 'Please select an option:'
     echo '1. Update, install, and remove packages (Will be prompted for root/admin password)'

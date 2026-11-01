@@ -1,19 +1,26 @@
 #!/usr/bin/env zsh
 
-declare script_dir="$(realpath $(dirname -- "$0"))"
-source $script_dir/macOSFunctions.sh
-NETWORK_SCRIPT="$script_dir/macOSNetwork.sh"
+# ---------------------------------------------------------------
+# File:     macos-setup.sh
+# Purpose:  Interactive menu that runs the macOS post-install setup and hardening steps
+# Project:  macos-setup-sgt7
+# Author:   sgt7 LLC
+# ---------------------------------------------------------------
 
-# --- Global Variables ---
+# Resolve the repo directory so the functions file is found no matter where the script is run from.
+declare script_dir="$(realpath $(dirname -- "$0"))"
+source $script_dir/macos-functions.sh
+NETWORK_SCRIPT="$script_dir/macos-network.sh"
+
+# A timestamped log gives an audit trail of which steps ran on this machine.
 log_file="setup_log_$(date +'%Y-%m-%d_%H-%M-%S').log"
 
-# --- Helper Functions ---
 log_execution() {
     echo "$(date +'%Y-%m-%d %H:%M:%S') - Executing: $1" >> "$log_file"
     echo "Logging execution of $1 to $log_file"
 }
 
-# --- Main Menu Loop ---
+# Each menu number maps to one or more functions so steps can be rerun individually.
 while true; do
     echo
     echo '==============================================='
@@ -105,7 +112,7 @@ while true; do
             ;;
 
         11)
-            log_execution "macOSNetwork"
+            log_execution "macos-network"
             if [[ -x "$NETWORK_SCRIPT" ]]; then
                 sudo zsh "$NETWORK_SCRIPT"
             else
@@ -140,6 +147,7 @@ while true; do
 
         17)
             log_execution "Execute All"
+            # SECURITY: Ask once up front so remote install scripts never run without consent.
             echo "The 'Execute All' option includes steps that execute scripts from the internet via 'curl | sh'."
             echo "This can be a security risk."
             local user_ack_unsafe
@@ -171,7 +179,7 @@ while true; do
             install_mise "$user_ack_unsafe"
             log_execution "install_mise_packages"
             install_mise_packages
-            log_execution "macOSNetwork"
+            log_execution "macos-network"
             if [[ -x "$NETWORK_SCRIPT" ]]; then
                 sudo zsh "$NETWORK_SCRIPT"
             fi

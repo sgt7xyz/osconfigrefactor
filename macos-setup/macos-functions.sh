@@ -1,14 +1,24 @@
 #!/usr/bin/env zsh
 
+# ---------------------------------------------------------------
+# File:     macos-functions.sh
+# Purpose:  Setup step functions sourced by macos-setup.sh
+# Project:  macos-setup-sgt7
+# Author:   sgt7 LLC
+# ---------------------------------------------------------------
+
+# Set by check_sip_status and read on exit to decide whether to show the SIP warning.
 SIP_DISABLED=false
 
-# 1. Update and patch your mac
+# 1. Update and patch your Mac.
+# Installs all updates and restarts if needed, so later steps run on a patched system.
 update_patch_mac() {
   echo "Updating and patching Mac..."  
   sudo softwareupdate -iaR --agree-to-license --verbose
 }
 
-# 2. Function to rename your mac
+# 2. Rename your Mac.
+# All three names are set because macOS uses each one in a different place (DNS, Bonjour, and Finder).
 rename_mac() {
     echo "Renaming Mac..."
     echo 'What would your like to rename your Mac to?'
@@ -29,14 +39,16 @@ rename_mac() {
     echo '#######################################'
 }
 
-# 3. Function to install Xcode Command Line Tools
+# 3. Install Xcode Command Line Tools.
+# Git, make, and compilers come from these tools, and Homebrew needs them.
 install_xcode_clt () {
     echo 'Installing XCode Command Line Tools...'
     xcode-select --install
     echo 'Xcode Command Line Tools installed successfully.'
 }
 
-# 4. Function to check System Integrity Protection (SIP) status
+# 4. Check System Integrity Protection (SIP) status.
+# SECURITY: SIP blocks changes to protected system files, so a disabled state is flagged.
 check_sip_status() {
     echo "Checking System Integrity Protection (SIP) status..."
     if ! csrutil status | grep -q "enabled"; then
@@ -44,11 +56,12 @@ check_sip_status() {
         SIP_DISABLED=true
     else
         echo "SIP is enabled."
-        SIP_DISABLED=false # Ensure it's set to false if enabled
+        SIP_DISABLED=false
     fi
 }
 
-# 5. Enable Firewall
+# 5. Enable firewall.
+# SECURITY: Stealth mode stops the Mac from answering probes such as ping.
 enable_firewall() {
     echo "Enabling firewall and firewall stealth mode..."
     sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate on
@@ -56,7 +69,8 @@ enable_firewall() {
     echo "Firewall enabled."
 }
 
-# 6. Disable auto-allow for built-in and downloaded software
+# 6. Disable auto-allow for built-in and downloaded software.
+# SECURITY: Signed apps must be approved by hand instead of being let through the firewall silently.
 disable_auto_allow() {
     echo "Disabling auto-allow for built-in and downloaded software..."
     sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setallowsigned off
@@ -64,7 +78,7 @@ disable_auto_allow() {
     echo "Auto-allow disabled."
 }
 
-# Function to display SIP warning on exit if needed
+# Shown on exit so the SIP warning is the last thing the user sees.
 display_sip_warning_if_needed() {
     if [ "$SIP_DISABLED" = true ]; then
         echo
@@ -77,7 +91,7 @@ display_sip_warning_if_needed() {
     fi
 }
 
-# 7. Function to install Homebrew
+# 7. Install Homebrew.
 install_homebrew() {
     local user_ack=${1:-}
     echo 'Installing Homebrew...'
@@ -90,7 +104,8 @@ install_homebrew() {
     fi
 }
 
-# 8. Function to install Homebrew packages
+# 8. Install Homebrew packages.
+# Package names live in brew_install_list.txt so the list can change without editing code.
 install_homebrew_packages() {
     echo 'Installing homebrew packages...'
     local app_list="brew_install_list.txt"
@@ -111,7 +126,7 @@ install_homebrew_packages() {
     echo 'Homebrew packages installed successfully.'
 }
 
-# 9. Function to install mise
+# 9. Install mise.
 install_mise() {
     local user_ack=${1:-}
     local zshrc_file="$HOME/.zshrc"
@@ -129,7 +144,8 @@ install_mise() {
     fi
 }
 
-# 10. Function to install mise packages
+# 10. Install mise packages.
+# Tools are pinned globally to their latest version. Projects can still pin their own in .mise.toml.
 install_mise_packages() {
     echo 'Installing mise packages...'
     local pkg_list="mise_install_list.txt"
@@ -146,7 +162,8 @@ install_mise_packages() {
     echo 'mise packages installed successfully.'
 }
 
-# 11. Configure faster key repeat
+# 12. Configure faster key repeat.
+# NOTE: Takes effect after logging out and back in.
 configure_key_repeat() {
     echo "Configuring faster key repeat..."
     defaults write -g KeyRepeat -int 1
@@ -154,7 +171,8 @@ configure_key_repeat() {
     echo "Faster key repeat configured."
 }
 
-# 12. Function to download and install Droid SansM Nerd Font
+# 13. Download and install Droid SansM Nerd Font.
+# The Nerd Font provides the icon glyphs that Powerlevel10k draws in the prompt.
 download_install_font() {
     local font_dir="./fonttmp"
     local font_url="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/DroidSansMono.zip"
@@ -171,7 +189,7 @@ download_install_font() {
     echo 'Fonts installed successfully. Ensure you select the font in your terminal etc.'
 }
 
-# 13. Function to install Oh My Zsh and Powerlevel10k
+# 14. Install Oh My Zsh and Powerlevel10k.
 install_oh_my_zsh_powerlevel10k() {
     local user_ack=${1:-}
     local zshrc_file="$HOME/.zshrc"
@@ -189,7 +207,7 @@ install_oh_my_zsh_powerlevel10k() {
     fi
 }
 
-# 14. Configure git
+# 15. Configure Git.
 configure_git() {
     cp configs/.gitignore_global ~/
     git config --global init.defaultBranch main
@@ -200,15 +218,14 @@ configure_git() {
     echo 'Base configuration for Git completed. Ensure you set your username and email!'
 }
 
-# 15. Configure application themes
+# 16. Configure application themes.
 configure_themes() {
     echo "Configuring application themes..."
 
-    # Create neovim config directory
     local nvim_config_dir="$HOME/.config/nvim"
     mkdir -p "$nvim_config_dir"
 
-    # Copy neovim init.lua configuration (includes vim.pack.add for catppuccin)
+    # The init.lua uses vim.pack.add to fetch the Catppuccin theme on first launch.
     if [[ -f "$script_dir/configs/nvim/init.lua" ]]; then
         cp "$script_dir/configs/nvim/init.lua" "$nvim_config_dir/init.lua"
         echo "Neovim configuration installed."
@@ -216,7 +233,7 @@ configure_themes() {
         echo "Warning: Neovim config file not found at $script_dir/configs/nvim/init.lua"
     fi
 
-    # Copy .editorconfig to home directory
+    # A home level .editorconfig gives every editor the same defaults outside of repos.
     if [[ -f "$script_dir/configs/.editorconfig" ]]; then
         cp "$script_dir/configs/.editorconfig" "$HOME/.editorconfig"
         echo "EditorConfig installed to home directory."
@@ -225,22 +242,22 @@ configure_themes() {
     echo "Theme configuration completed."
 }
 
-# Helper function to prompt the user about security risks of curl | sh
+# SECURITY: Every curl | sh install goes through this gate so remote code never runs without consent.
+# A "y" or "n" passed in from Execute All skips the prompt.
 prompt_for_security_risk() {
     local cmd_to_run=$1
-    local user_ack=${2:-} # Can be "y", "n", or empty
+    local user_ack=${2:-}
 
     if [[ "$user_ack" =~ ^[Yy]$ ]]; then
         eval "$cmd_to_run"
-        return 0 # success
+        return 0
     fi
 
     if [[ "$user_ack" =~ ^[Nn]$ ]]; then
         echo "Installation skipped by pre-acknowledged user choice."
-        return 1 # failure
+        return 1
     fi
 
-    # Prompt if no acknowledgement is given
     echo "WARNING: You are about to execute a script from the internet using 'curl | sh'."
     echo "This can be a security risk as it runs the script with the same permissions as your user account."
     echo "Please make sure you trust the source of the script."
@@ -251,9 +268,9 @@ prompt_for_security_risk() {
     read "reply?Do you want to proceed? (y/n) "
     if [[ "$reply" =~ ^[Yy]$ ]]; then
         eval "$cmd_to_run"
-        return 0 # success
+        return 0
     else
         echo "Installation aborted by user."
-        return 1 # failure
+        return 1
     fi
 }

@@ -1,18 +1,26 @@
 #!/usr/bin/env bash
 
+# ---------------------------------------------------------------
+# File:     fedora-gnome-setup.sh
+# Purpose:  Interactive menu that runs the Fedora GNOME post-install setup steps
+# Project:  fedora-gnome-sgt7
+# Author:   sgt7 LLC
+# ---------------------------------------------------------------
+
+# Resolve the repo directory so the functions file is found no matter where the script is run from.
 declare script_dir_path
 script_dir_path="$(dirname -- "$0")"
 
 declare script_dir
 script_dir="$(realpath "$script_dir_path")"
 
-source "$script_dir"/fedoraTilingFunctions.sh
+source "$script_dir"/fedora-gnome-functions.sh
 
-# Menu for selecting the installation steps
+# Each menu number maps to one or more functions so steps can be rerun individually.
 while true; do
     echo
     echo '==============================================='
-    echo '    Fedora Tiling Window Manager Setup'
+    echo '         Fedora GNOME Setup Script'
     echo '==============================================='
     echo 'Please select an option:'
     echo
@@ -27,28 +35,26 @@ while true; do
     echo '6.  Enable Flathub repository'
     echo '7.  Install development tools'
     echo '8.  Install codecs'
+    echo '9.  Install VLC and multimedia codecs'
     echo
     echo '  Environment Setup:'
-    echo '9.  Create custom directories'
-    echo '10. Install Nerd font'
-    echo '11. Copy wallpapers'
-    echo '12. Customize tiling settings'
-    echo '13. Customize vimrc file'
+    echo '10. Create custom directories'
+    echo '11. Install fonts'
+    echo '12. Copy wallpapers'
+    echo '13. Customize GNOME settings'
+    echo '14. Configure Vim'
+    echo '15. Install Numix theme and icons'
     echo
     echo '  Applications & Tools:'
-    echo '14. Install VLC, plugins, and restricted extras'
-    echo '15. Install VSCode'
-    echo '16. Install OBS Studio'
+    echo '16. Install VSCode'
     echo '17. Configure Git'
     echo
     echo '  System Configuration:'
     echo '18. Install and enable firewalld'
     echo '19. Configure swappiness'
     echo '20. Speed up boot time'
-    echo '21. Install Docker'
-    echo '22. Install VirtualBox'
     echo
-    echo '23. Execute all steps'
+    echo '21. Execute all steps'
     echo '0.  Exit'
     echo
     echo -n 'Enter the number of your choice: '
@@ -61,66 +67,66 @@ while true; do
             
         2)  
             update_dnf
-            ;;          
+            ;; 
 
         3)  
             upgrade_fedora
-            ;;         
-     
+            ;; 
+    
         4)  
             update_firmware
-            ;; 
-      
+            ;;
+
         5)  
             install_packages
             remove_packages
-            ;; 
-    
+            ;;
+        
         6)  
             enable_flathub
             ;;
-
-        7) 
-            install_development_tools 
-            ;;
         
-        8)  
+        7)  
+            install_development_tools
+            ;;
+
+        8) 
             install_codecs
             ;;
-        
+
         9) 
+            install_vlc_multimedia_codecs
+            ;;
+        
+        10)  
             create_directories
             ;;
             
-        10)  
+        11)  
             install_font
             ;;
             
-        11)  
+        12)  
             copy_wallpapers
             ;;
 
-        12) 
-            customize_tiling
-            ;;
-
         13) 
+            customize_gnome
+            ;;
+        
+        14) 
             configure_vimrc
             ;;
 
-        14) 
-            install_vlc_restricted_extras
+        15) 
+            install_numix_theme
             ;;
 
-        15)
+        16) 
             install_vscode
             ;;
 
-        16)
-            install_obs
-            ;;
-
-        17)
+        17) 
             configure_git
             ;;
 
@@ -133,18 +139,10 @@ while true; do
             ;;
 
         20) 
-            speed_up_boot_time
+            speed_boot_time
             ;;
 
-        21)
-            install_docker
-            ;;
-
-        22)
-            install_virtualbox
-            ;;
-        
-        23)
+        21) 
             echo 'Executing all setup steps...'
             echo
             backup_configs
@@ -156,20 +154,18 @@ while true; do
             enable_flathub
             install_development_tools
             install_codecs
+            install_vlc_multimedia_codecs
             create_directories
             install_font
             copy_wallpapers
-            customize_tiling
+            customize_gnome
             configure_vimrc
-            install_vlc_restricted_extras
+            install_numix_theme
             install_vscode
-            install_obs
             configure_git
             install_firewalld_enable
             configure_swappiness
-            speed_up_boot_time
-            install_docker
-            install_virtualbox
+            speed_boot_time
             echo
             echo 'All setup steps completed!'
             ;;
@@ -187,8 +183,3 @@ while true; do
     echo 'Press Enter to continue...'
     read
 done
-
-# Future installation steps
-# Install Google Chrome
-# Install mise-en-place
-# Install OBS Studio

@@ -1,26 +1,25 @@
 #!/usr/bin/env pwsh
 
 # ---------------------------------------------------------------
-# File:     win11Setup.ps1
+# File:     win11-setup.ps1
 # Purpose:  Interactive menu-driven Windows 11 setup and configuration script
-# Project:  Windows 11 Setup Script
+# Project:  windows-setup-sgt7
 # Author:   sgt7 LLC
 # ---------------------------------------------------------------
 
-# Get the script directory
+# Resolve the repo directory so the functions file and config lists are found from any working directory.
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-# Source the functions from win11Functions.ps1
-. (Join-Path $scriptDir "win11Functions.ps1")
+. (Join-Path $scriptDir "win11-functions.ps1")
 
-# Check if running as administrator
+# SECURITY: Most steps change HKLM, services, or installed apps, so fail fast without elevation.
 $isAdmin = [Security.Principal.WindowsIdentity]::GetCurrent().Groups -contains 'S-1-5-32-544'
 if (-not $isAdmin) {
     Write-Error "This script requires administrator privileges. Please run PowerShell as Administrator and try again."
     exit 1
 }
 
-# Menu for selecting the installation steps
+# Each menu number maps to one function so steps can be rerun individually.
 while ($true) {
     Write-Host
     Write-Host "==============================================="

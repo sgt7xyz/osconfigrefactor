@@ -1,14 +1,22 @@
 #!/usr/bin/env bash
 
+# ---------------------------------------------------------------
+# File:     debian-tiling-setup.sh
+# Purpose:  Interactive menu that runs the Debian i3 tiling post-install setup steps
+# Project:  debian-tiling-sgt7
+# Author:   sgt7 LLC
+# ---------------------------------------------------------------
+
+# Resolve the repo directory so the functions file is found no matter where the script is run from.
 declare script_dir_path
 script_dir_path="$(dirname -- "$0")"
 
 declare script_dir
 script_dir="$(realpath "$script_dir_path")"
 
-source "$script_dir"/functions.sh
+source "$script_dir"/debian-tiling-functions.sh
 
-# Menu for selecting the installation steps
+# Each menu number maps to one or more functions so steps can be rerun individually.
 while true; do
     echo 'Please select an option:'
     echo '1. Backup configs, Update, install, and remove packages (Will be prompted for root/admin password)'

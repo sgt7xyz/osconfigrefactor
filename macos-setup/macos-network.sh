@@ -1,8 +1,13 @@
 #!/usr/bin/env zsh
-# =============================================================================
-# macOSNetwork.sh — Detect active macOS network interfaces & configure DNS
-# =============================================================================
 
+# ---------------------------------------------------------------
+# File:     macos-network.sh
+# Purpose:  Detect active macOS network interfaces and configure their DNS servers
+# Project:  macos-setup-sgt7
+# Author:   sgt7 LLC
+# ---------------------------------------------------------------
+
+# Fail on unset variables, since a typo here could wipe DNS on the wrong interface.
 setopt NO_UNSET
 
 # ── Color helpers ────────────────────────────────────────────────────────────
@@ -33,19 +38,18 @@ fi
 
 # ── Utility functions ────────────────────────────────────────────────────────
 
-# Strip commas, collapse whitespace — so "1, 3" and "1,3" both become "1 3"
+# Strip commas and collapse whitespace, so "1, 3" and "1,3" both become "1 3".
 normalize_input() {
     local result="${1//,/ }"
-    # Collapse runs of spaces into a single space
     while [[ "$result" == *"  "* ]]; do
         result="${result//  / }"
     done
-    result="${result## }"   # trim leading space
-    result="${result%% }"   # trim trailing space
+    result="${result## }"
+    result="${result%% }"
     print -r -- "$result"
 }
 
-# Validate that input is a number in range [1, max]
+# Rejects anything outside the menu range so a bad entry cannot index past the interface list.
 validate_number() {
     local input="$1" max="$2"
     [[ "$input" =~ ^[0-9]+$ ]] || return 1
@@ -55,8 +59,8 @@ validate_number() {
 
 # ── Shared state ─────────────────────────────────────────────────────────────
 # These variables are set by menu functions and consumed in main():
-#   selected_interfaces — populated by menu_select_interfaces()
-#   chosen_dns          — populated by menu_select_dns() / menu_custom_dns()
+#   selected_interfaces, populated by menu_select_interfaces()
+#   chosen_dns, populated by menu_select_dns() / menu_custom_dns()
 
 # ── Core functions ───────────────────────────────────────────────────────────
 
@@ -67,7 +71,7 @@ detect_active_interfaces() {
     # Use listallnetworkservices to catch renamed/numbered service variants
     # (e.g. "USB 10/100/1000 LAN 4") that listallhardwareports omits.
     while IFS= read -r service; do
-        # Skip the header line and disabled (*) services
+        # Disabled services are listed with a leading asterisk and are skipped.
         [[ "$service" == *"asterisk"* || "$service" == \** ]] && continue
         ip=$(networksetup -getinfo "$service" 2>/dev/null \
             | awk -F': ' '/^IP address/ {print $2}')
@@ -182,7 +186,7 @@ menu_select_interfaces() {
             if validate_number "$token" "${#ifaces[@]}"; then
                 selected_interfaces+=("${ifaces[$token]}")
             else
-                warn "Invalid selection: '$token' — skipping."
+                warn "Invalid selection: '$token', skipping."
             fi
         done
 

@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 
-#1 Backup configs.
+# ---------------------------------------------------------------
+# File:     fedora-gnome-functions.sh
+# Purpose:  Setup step functions sourced by fedora-gnome-setup.sh
+# Project:  fedora-gnome-sgt7
+# Author:   sgt7 LLC
+# ---------------------------------------------------------------
+
+# 1. Backup configs.
+# Keeps copies of the stock shell dotfiles before later steps change them.
 backup_configs() {
   mkdir ~/.config-backups
   cp ~/.bashrc ~/.config-backups
@@ -8,26 +16,29 @@ backup_configs() {
   cp ~/.bash_logout ~/.config-backups
 }
 
-#2  Update DNF for faster downloads.
+# 2. Update DNF for faster downloads.
+# Parallel downloads and the fastest mirror cut the time of every later dnf step.
 update_dnf() {
    echo 'max_parallel_downloads=10' | sudo tee -a /etc/dnf/dnf.conf > /dev/null
    echo 'fastestmirror=true' | sudo tee -a /etc/dnf/dnf.conf > /dev/null
 }
 
-#3 Upgrade Fedora.
+# 3. Upgrade Fedora.
 upgrade_fedora() {
     sudo dnf -y upgrade
     echo 'System updated successfully!'
 }
 
-#4 Update firmware.
+# 4. Update firmware.
+# Refreshes LVFS metadata first, because a stale cache hides available firmware updates.
 update_firmware() {
     sudo fwupdmgr refresh --force
     sudo fwupdmgr get-updates
     sudo fwupdmgr update
 }
 
-#5 Install and Remove Packages (Will be prompted for root/admin password.)
+# 5. Install and remove packages.
+# Package names live in package_install.txt so the list can change without editing code.
 install_packages() {
     while IFS= read -r package; do
         sudo dnf -y install "$package"
@@ -35,6 +46,7 @@ install_packages() {
     echo 'Packages installed successfully!'
 }
 
+# Removes unwanted packages listed in package_remove.txt, then drops orphaned dependencies.
 remove_packages() {
     while IFS= read -r package; do
         sudo dnf -y remove "$package"
@@ -43,36 +55,37 @@ remove_packages() {
     echo 'Packages removed successfully!'
 }
 
-#6 Enable Flathub repository.
+# 6. Enable Flathub repository.
+# Fedora does not enable the full Flathub remote by default, so it is added here.
 enable_flathub() {
     sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
     echo 'Flathub repository enabled successfully!'
 }
 
-#7 Install development tools.
+# 7. Install development tools.
 install_development_tools(){
     sudo dnf -y group install development-tools
 }
 
-#8 Install codecs.
+# 8. Install codecs.
+# Swaps the patent-limited ffmpeg-free build for full ffmpeg so common video formats play.
 install_codecs() {
     sudo dnf -y swap ffmpeg-free ffmpeg --allowerasing
     echo 'Codecs installed successfully!'
 }
 
-#9 Install VLC and multimedia codecs. 
+# 9. Install VLC and multimedia codecs.
 install_vlc_multimedia_codecs() {
-    # Install VLC and related packages
     sudo dnf -y install vlc vlc-extras
     
-    # Install available multimedia codecs from default repositories
+    # Only default repository plugins are used, so RPM Fusion is not required.
     sudo dnf -y install gstreamer1-plugins-base gstreamer1-plugins-good gstreamer1-plugins-bad-free gstreamer1-plugins-bad-free-extras
     
     echo 'VLC and available multimedia codecs installed successfully!'
     echo 'Note: Some additional codecs may require RPM Fusion repositories for full multimedia support.'
 }
 
-#10 Create custom directories in your home directory.
+# 10. Create custom directories in the home directory.
 create_directories() {
     local dirs=(~/.themes ~/software ~/code ~/scripts ~/.local/share/fonts ~/.local/share/icons ~/Pictures/wallpapers ~/.config/tilix/schemes)
     for dir in "${dirs[@]}"; do
@@ -81,7 +94,8 @@ create_directories() {
     echo 'Directories created successfully!'
 }
 
-#11 Install fonts.
+# 11. Install fonts.
+# The Nerd Font provides the icon glyphs used by terminal prompts and themes.
 install_font() {
     font_dir=(~/fonttmp)
     font_url="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/DroidSansMono.zip"
@@ -101,14 +115,15 @@ install_font() {
     echo 'Fonts installed successfully. Ensure you select the font in your terminal etc.'
 }
 
-#12 Copy wallpapers to your ~/Pictures/wallpapers directory.
+# 12. Copy wallpapers to ~/Pictures/wallpapers.
 copy_wallpapers() {
     cp wallpapers/* ~/Pictures/wallpapers
     echo 'Wallpaper copied successfully!'
     echo 'Sometimes you need to log out and login because of a feature in Gnome that does not update the wallpaper immediately.'
 }
 
-#13 Customize Gnome settings.
+# 13. Customize GNOME settings.
+# Sets both light and dark wallpaper keys because GNOME picks one based on the active theme.
 customize_gnome() {
     local wallpaper_path="$HOME/Pictures/wallpapers/fedora-black-4k.png"
     gsettings set org.gnome.desktop.background picture-uri "file://$wallpaper_path"
@@ -117,7 +132,8 @@ customize_gnome() {
     echo 'Gnome customized successfully!'
 }
 
-#14 Configure Vim. 
+# 14. Configure Vim.
+# NOTE: This overwrites any existing ~/.vimrc.
 configure_vimrc() {
     echo "syntax on" > ~/.vimrc
     echo "set number" >> ~/.vimrc
@@ -125,16 +141,16 @@ configure_vimrc() {
     echo 'Vim customized successfully!'
 }
 
-#15 Install Numix theme and icons.
+# 15. Install Numix theme and icons.
 install_numix_theme() {
-    # Install Numix theme and icons from repositories
     sudo dnf -y install numix-gtk-theme numix-icon-theme-circle
     gsettings set org.gnome.desktop.interface gtk-theme Numix
     gsettings set org.gnome.desktop.interface icon-theme Numix-Circle
     echo 'Numix theme installed and configured successfully!'
 }
 
-#16 Prep and install VSCode.
+# 16. Prep and install VSCode.
+# SECURITY: Imports the Microsoft signing key and enables gpgcheck so dnf verifies VSCode packages.
 install_vscode() {
     sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
     sudo sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
@@ -145,7 +161,7 @@ install_vscode() {
     echo 'VSCode installed successfully!'
 }
 
-#17 Configure Git.
+# 17. Configure Git.
 configure_git() {
     if [ -f configs/.gitignore_global ]; then
         cp configs/.gitignore_global ~/
@@ -161,16 +177,15 @@ configure_git() {
     echo 'Base configuration for Git completed. Ensure you set your username and email!'
 }
 
-#18 Install and enable firewalld.
+# 18. Install and enable firewalld.
+# SECURITY: Makes sure the host firewall is running and prints the active zone for review.
 install_firewalld_enable() {
-    # firewalld is usually pre-installed on Fedora, but install if missing
+    # firewalld usually ships with Fedora, so this install is a no-op unless it was removed.
     sudo dnf -y install firewalld
     
-    # Enable and start firewalld service
     sudo systemctl enable firewalld
     sudo systemctl start firewalld
     
-    # Show status and current zones
     sudo firewall-cmd --state
     sudo firewall-cmd --get-default-zone
     sudo firewall-cmd --list-all
@@ -178,7 +193,8 @@ install_firewalld_enable() {
     echo 'firewalld installed and enabled successfully!'
 }
 
-#19 Configure swappiness.
+# 19. Configure swappiness.
+# A value of 10 keeps more of the desktop in RAM instead of swapping it out early.
 configure_swappiness() {
     echo 'swappiness before configuration:'
     sudo cat /proc/sys/vm/swappiness
@@ -188,7 +204,8 @@ configure_swappiness() {
     sudo sysctl -a | grep vm.swappiness
 }
 
-#20 Speed up boot time.
+# 20. Speed up boot time.
+# Backs up the GRUB config first so the original timeout can be restored.
 speed_boot_time() {
     sudo cp -p /etc/default/grub /etc/default/grub.original
     sudo sed -i 's/GRUB_TIMEOUT=5/GRUB_TIMEOUT=2/g' /etc/default/grub

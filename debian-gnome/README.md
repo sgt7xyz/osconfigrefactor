@@ -1,72 +1,174 @@
-![Debian Logo](images/debian.png) ![Gnome Logo](images/gnome.png)
+# Debian GNOME Setup
 
-<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">Creative Commons Attribution-NonCommercial 4.0 International License</a>.
+Menu-driven Bash scripts that automate the post-install setup of a Debian desktop running GNOME.
 
-# My Debian Gnome Install
+[![License: PolyForm Small Business 1.0.0](https://img.shields.io/badge/license-PolyForm_Small_Business-blue)](https://polyformproject.org/licenses/small-business/1.0.0)
 
-This script is to automate as much as possible the post installation of my Debian system or provide instructions for personalization. It is still a work in progress and as things can be automated they will be moved from this README to the debianGnomeSetup.sh script. Obviously you take this repository and modify it to your taste.
+![Debian logo](images/debian.png) ![GNOME logo](images/gnome.png)
+
+## Overview
+
+This repository automates as much as possible of a fresh Debian GNOME install: package updates,
+desktop tweaks, a firewall, VSCode, and Git defaults. Steps that cannot be scripted yet are listed
+under [Manual steps](#manual-steps) and move into the script as they get automated. Fork it and
+adjust the package lists and settings to your taste.
+
+## Architecture
+
+`debian-gnome-setup.sh` shows a numbered menu and calls functions from
+`debian-gnome-functions.sh`. Package lists are plain text files read at run time.
+
+```text
+debian-gnome-setup.sh --> debian-gnome-functions.sh --> apt, gsettings, ufw, git
+                                    |
+                                    +--> package_install.txt, package_remove.txt, wallpapers/, configs/
+```
+
+## Prerequisites
+
+| Requirement                   | Version                |
+| :---------------------------- | :--------------------- |
+| Debian with the GNOME desktop | 12 (bookworm) or newer |
+| Bash                          | 5.0 or newer           |
+| A user with `sudo` rights     | Not applicable         |
+| Internet access               | Not applicable         |
+
+## Quick start
 
 1. Clone this repository to your home directory.
 
+   ```bash
+   cd ~
+   git clone git@github.com:sgt7xyz/debian-gnome-sgt7.git
+   cd debian-gnome-sgt7
+   ```
+
+1. Select additional repositories and switch to the fastest update server.
+
+   * Open **Software and Updates**, then the **Debian Software** tab.
+   * Select the additional repositories under **Downloadable from the Internet**.
+   * Under **Download from**, select the best server for your locale.
+
+1. Run the setup script from the repository directory.
+
+   ```bash
+   chmod 700 debian-gnome-setup.sh
+   ./debian-gnome-setup.sh
+   ```
+
+## Configuration
+
+This project reads no environment variables. Behavior is controlled by the files below.
+
+| File                        | Description                                 | Default                    |
+| :-------------------------- | :------------------------------------------ | :------------------------- |
+| `package_install.txt`       | Packages to install, one per line           | CLI tools, Tilix, Vim      |
+| `package_remove.txt`        | Packages to purge, one per line             | Bundled GNOME games        |
+| `wallpapers/`               | Wallpaper copied to `~/Pictures/wallpapers` | Feather wallpaper          |
+| `configs/.gitignore_global` | Global Git ignore file copied to `~/`       | Common OS and editor files |
+
+## Usage
+
+Run `./debian-gnome-setup.sh` and pick a step by number. Choose **13** to run every step in order.
+
+| Option | Step                                             |
+| -----: | :----------------------------------------------- |
+|      1 | Update, install, and remove packages             |
+|      2 | Create custom directories in your home directory |
+|      3 | Copy wallpapers to `~/Pictures/wallpapers`       |
+|      4 | Customize GNOME settings                         |
+|      5 | Customize vimrc file settings                    |
+|      6 | Install VLC, plugins, and restricted extras      |
+|      7 | Install UFW and enable it                        |
+|      8 | Configure swappiness                             |
+|      9 | Speed up boot time                               |
+|     10 | Install Numix theme and icons                    |
+|     11 | Prep and install VSCode                          |
+|     12 | Configure Git                                    |
+|     13 | Execute all                                      |
+|      0 | Exit                                             |
+
+### Manual steps
+
+Before running the steps, I switch to X.org because Wayland does not work as well for me. Your
+experience may vary. At the login screen, select **System X11 Default**, then confirm from a
+terminal after logging in.
+
 ```bash
-cd ~
-git clone git@github.com:sgt7io/my-debian-gnome.git
-cd my-debian-gnome
-```
-
-2. Select additional repositories and switch to fastest update server.
-
-- Open "Software and Updates" => Debian Software Tab
-  - Select additional repositores under the "Downloadable from the Internet" section.
-  - Under "Download from" and select the best server for your locale.
-
-3. Run the debianGnomeSetup.sh script
-
-```bash
-$ chmod 700 debianGnomeSetup.sh
-$ ./debianGnomeSetup.sh
-```
-
-Install Desktop Desktop Icons,and User Themes Extensions
-
-There are numerous themes and icons on the internet, but I simply use the
-easy to install Numix GTK theme and Numix circle icons.
-
-I also use the following wallpaper, which I sourced from [Wallpaper House](https://wallpaper-house.com/wallpaper-id-391811.php "Wallpaper House")
-
-![Feather Wallpaper](images/wallpaperpreview.png)
-
-Go to Account Settings and set your user image. This will make your system more personal and more beautiful.
-
-Ctrl+Alt+T to open Terminal
-Settings => Devices => Keyboard => Add new shortcut
-Name it Open Terminal and type gnome-terminal as a command
-To set the shortcut, press Ctrl+Alt+T
-
-Xkill shortcut
-Settings => Devices => Keyboard => Add new shortcut.
-Type xkill in the name and command and set Ctrl+Alt+Esc as a shortcut
-
-Change LibreOffice look
-
-View => Toolbar Layout => Single Toolbar
-
-Tools => Options => View => Style. Select Colibre icons
-
-Enable Tray Icons
-
-https://extensions.gnome.org/extension/1031/topicons/
-
-Enable Nightlight
-Settings → Devices → Display → and set Night Light on.
-
-Firefox Settings
-Firefox Preferences and activate Restore previous session
-
-Firefox DRM Settings
-DRM support select enable
-
-Before execurting all the steps I personall switch to X.org as Wayland does not work as well in my opinion, but your experience may vary.
-Prior to logging in select System X11 Default at login screen.
-You can can verify from the terminal once you log in.
 ps -e | grep X
+```
+
+After the script finishes:
+
+* Install the **Desktop Icons** and **User Themes** extensions.
+* Set your user image under **Account Settings**.
+* Add a terminal shortcut. Open **Settings**, then **Devices**, then **Keyboard**, then **Add new
+  shortcut**. Name it `Open Terminal`, set the command to `gnome-terminal`, and press Ctrl+Alt+T.
+* Add an xkill shortcut the same way. Use `xkill` as the name and command, and press
+  Ctrl+Alt+Esc.
+* Change the LibreOffice look. Select **View**, then **Toolbar Layout**, then **Single Toolbar**.
+  Then select **Tools**, then **Options**, then **View**, then **Style**, and choose **Colibre**.
+* Enable tray icons with the [TopIcons GNOME extension](https://extensions.gnome.org/extension/1031/topicons/).
+* Turn on Night Light under **Settings**, then **Devices**, then **Display**.
+* In Firefox preferences, enable **Restore previous session** and enable DRM support.
+
+The theme is the easy to install Numix GTK theme with Numix Circle icons. The wallpaper comes from
+[Wallpaper House](https://wallpaper-house.com/wallpaper-id-391811.php).
+
+![Feather wallpaper preview](images/wallpaperpreview.png)
+
+## Project structure
+
+```text
+.
+├── debian-gnome-setup.sh       # Entry point and menu
+├── debian-gnome-functions.sh   # One function per setup step
+├── package_install.txt         # Packages to install
+├── package_remove.txt          # Packages to purge
+├── configs/                    # Dotfiles copied into the home directory
+├── wallpapers/                 # Desktop wallpaper
+├── images/                     # README images
+├── .github/workflows/          # ShellCheck CI
+├── FUNCTIONALITY.md            # How the code works
+└── LICENSE
+```
+
+## Security considerations
+
+* Review every script before running it. Most steps call `sudo`.
+* Step 7 enables UFW, which denies inbound connections by default.
+* Step 11 adds the Microsoft signing key so apt verifies VSCode packages.
+* No credentials are stored. Set your Git name and email by hand after step 12.
+
+## Testing
+
+There are no automated tests. Lint the scripts with ShellCheck, which also runs in CI on every push.
+
+```bash
+shellcheck -x debian-gnome-setup.sh debian-gnome-functions.sh
+```
+
+Test full runs in a throwaway Debian VM before using them on a real machine.
+
+## Troubleshooting
+
+| Problem                                          | Fix                                                    |
+| :----------------------------------------------- | :----------------------------------------------------- |
+| Wallpaper does not change after step 4           | Log out and back in. GNOME does not always refresh it. |
+| `package_install.txt: No such file or directory` | Run the script from the repository directory.          |
+| Last package in a list is skipped                | End the list file with a newline.                      |
+
+## Roadmap
+
+* Move more of the manual steps into the script.
+* Make the package list reads work from any directory.
+
+## License
+
+Released under the [PolyForm Small Business License 1.0.0](LICENSE). It is free for small
+businesses, individuals, and nonprofits. Larger organizations need a commercial license from
+SGT7 LLC.
+
+## Author
+
+Built by sgt7 LLC.
