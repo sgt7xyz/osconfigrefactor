@@ -115,6 +115,7 @@ Run `./fedora-tiling-setup.sh` and pick a step by number. Choose **23** to run e
 ├── scripts/                     # volume-up.sh and volume-down.sh
 ├── wallpapers/                  # Desktop wallpapers
 ├── images/                      # README images
+├── .github/workflows/           # ShellCheck CI
 ├── FUNCTIONALITY.md             # How the code works
 └── LICENSE
 ```
@@ -130,7 +131,7 @@ Run `./fedora-tiling-setup.sh` and pick a step by number. Choose **23** to run e
 
 ## Testing
 
-There are no automated tests. Lint the scripts with ShellCheck.
+There are no automated tests. Lint the scripts with ShellCheck, which also runs in CI on every push.
 
 ```bash
 shellcheck -x fedora-tiling-setup.sh fedora-tiling-functions.sh fedora-tiling-vm-prep.sh scripts/*.sh

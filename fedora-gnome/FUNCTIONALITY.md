@@ -69,9 +69,11 @@ app, dconf-editor, fastfetch, nmap, Tilix, and Vim. The remove list holds `tali`
 
 ### .github/workflows/shellcheck.yml
 
-**Purpose:** Runs ShellCheck on every push and pull request.
+**Purpose:** Runs ShellCheck on every push and pull request. It downloads ShellCheck v0.11.0,
+checks the archive against a pinned SHA-256, and lints every tracked `.sh` file with `-x`. Any
+finding fails the job.
 
-**Depends on:** GitHub Actions and the CICDToolbox ShellCheck pipeline script.
+**Depends on:** GitHub Actions and `actions/checkout`, pinned to the commit SHA of v7.0.1.
 
 ## Function entries
 
@@ -276,11 +278,11 @@ All other functions live in `fedora-gnome-functions.sh` and take no arguments.
   from RPM Fusion. Nothing in the script enables it, so on a stock install this step reports a
   failure.
 * **Unused directory.** `~/.config/tilix/schemes` is created but nothing is copied into it yet.
-* **CI fetches a remote script.** The ShellCheck workflow pipes a script from GitHub into Bash.
 
 ## Change log
 
 | Date       | Summary                                                                                                  |
 | :--------- | :------------------------------------------------------------------------------------------------------- |
+| 2026-11-01 | Replaced the ShellCheck workflow with a pinned, checksum verified release and checkout SHA.              |
 | 2026-11-01 | Added strict mode with per step error handling and fixed the package lists, font step, and dnf settings. |
 | 2026-11-01 | Added FUNCTIONALITY.md. Renamed scripts to kebab-case.                                                   |

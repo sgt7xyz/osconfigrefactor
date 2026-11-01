@@ -101,6 +101,14 @@ rofi for Wayland, display tools, and the GNOME keyring. The remove list holds `a
 
 **Depends on:** Nothing.
 
+### .github/workflows/shellcheck.yml
+
+**Purpose:** Runs ShellCheck on every push and pull request. It downloads ShellCheck v0.11.0,
+checks the archive against a pinned SHA-256, and lints every tracked `.sh` file with `-x`. Any
+finding fails the job.
+
+**Depends on:** GitHub Actions and `actions/checkout`, pinned to the commit SHA of v7.0.1.
+
 ## Function entries
 
 ### run_step
@@ -334,11 +342,11 @@ All other functions live in `fedora-tiling-functions.sh` and take no arguments.
   matches the Fedora 41 or newer requirement in the README.
 * **Unused helpers.** The volume scripts, rofi configs, and `install_brave_browsers` are not wired
   into the setup.
-* **No CI.** This repository has no ShellCheck workflow.
 
 ## Change log
 
 | Date       | Summary                                                                                                               |
 | :--------- | :-------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-01 | Added a ShellCheck workflow with a pinned, checksum verified release and checkout SHA.                                |
 | 2026-11-01 | Added strict mode with per step error handling and fixed the VM prep, Docker repo, VirtualBox repo, and dnf settings. |
 | 2026-11-01 | Added FUNCTIONALITY.md. Renamed all scripts to kebab-case.                                                            |

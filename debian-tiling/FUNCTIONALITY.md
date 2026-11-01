@@ -113,6 +113,14 @@ Each helper runs with `set -euo pipefail`, so it stops at the first failed comma
 
 **Depends on:** `wpctl` from WirePlumber, and `apt-get`.
 
+### .github/workflows/shellcheck.yml
+
+**Purpose:** Runs ShellCheck on every push and pull request. It downloads ShellCheck v0.11.0,
+checks the archive against a pinned SHA-256, and lints every tracked `.sh` file with `-x`. Any
+finding fails the job.
+
+**Depends on:** GitHub Actions and `actions/checkout`, pinned to the commit SHA of v7.0.1.
+
 ## Function entries
 
 ### run_step
@@ -281,11 +289,11 @@ All other functions live in `debian-tiling-functions.sh` and take no arguments.
 * **Mixed audio tools.** The volume scripts use `wpctl`, but the media key bindings in `i3config`
   use `pactl`.
 * **Unused helper.** `scripts/system-update.sh` is not copied anywhere by the setup script.
-* **No CI.** Unlike debian-gnome, this repository has no ShellCheck workflow.
 
 ## Change log
 
 | Date       | Summary                                                                                                    |
 | :--------- | :--------------------------------------------------------------------------------------------------------- |
+| 2026-11-01 | Added a ShellCheck workflow with a pinned, checksum verified release and checkout SHA.                     |
 | 2026-11-01 | Added strict mode with per step error handling and fixed the font step, alacritty folder, and GRUB backup. |
 | 2026-11-01 | Added FUNCTIONALITY.md. Renamed all scripts to kebab-case.                                                 |

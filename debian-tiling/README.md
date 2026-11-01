@@ -107,6 +107,7 @@ Run `./debian-tiling-setup.sh` and pick a step by number. Choose **15** to run e
 ├── scripts/                     # volume-up.sh, volume-down.sh, system-update.sh
 ├── wallpapers/                  # Desktop wallpapers
 ├── images/                      # README images
+├── .github/workflows/           # ShellCheck CI
 ├── FUNCTIONALITY.md             # How the code works
 └── LICENSE
 ```
@@ -121,7 +122,7 @@ Run `./debian-tiling-setup.sh` and pick a step by number. Choose **15** to run e
 
 ## Testing
 
-There are no automated tests. Lint the scripts with ShellCheck.
+There are no automated tests. Lint the scripts with ShellCheck, which also runs in CI on every push.
 
 ```bash
 shellcheck -x debian-tiling-setup.sh debian-tiling-functions.sh debian-tiling-vm-prep.sh scripts/*.sh

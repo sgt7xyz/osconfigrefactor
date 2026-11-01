@@ -73,10 +73,14 @@ listed above.
 
 ### .github/workflows/shellcheck.yml and .shellcheckrc
 
-**Purpose:** Run ShellCheck on every push and pull request. `.shellcheckrc` disables SC1091, the
-notice that the sourced functions file was not passed as input.
+**Purpose:** Runs ShellCheck on every push and pull request. It downloads ShellCheck v0.11.0,
+checks the archive against a pinned SHA-256, and lints every tracked `.sh` file with `-x`. Any
+finding fails the job.
 
-**Depends on:** GitHub Actions and the CICDToolbox ShellCheck pipeline script.
+**Depends on:** GitHub Actions and `actions/checkout`, pinned to the commit SHA of v7.0.1.
+
+`.shellcheckrc` disables SC1091, the notice that the sourced functions file was not passed as
+input.
 
 ## Function entries
 
@@ -229,8 +233,6 @@ All other functions live in `debian-gnome-functions.sh` and take no arguments.
   alone.
 * **Overwrites without asking.** `configure_vimrc` replaces `~/.vimrc` and `configure_git` replaces
   `~/.gitignore_global`.
-* **CI fetches a remote script.** The ShellCheck workflow pipes a script from GitHub into Bash at
-  run time, so the check depends on that external file.
 * **Manual steps remain.** The README lists GNOME extensions and shortcuts that are still done by
   hand.
 
@@ -238,5 +240,6 @@ All other functions live in `debian-gnome-functions.sh` and take no arguments.
 
 | Date       | Summary                                                                                                   |
 | :--------- | :-------------------------------------------------------------------------------------------------------- |
+| 2026-11-01 | Replaced the ShellCheck workflow with a pinned, checksum verified release and checkout SHA.               |
 | 2026-11-01 | Added strict mode with per step error handling and fixed the package lists, GRUB backup, and apt prompts. |
 | 2026-11-01 | Added FUNCTIONALITY.md. Renamed scripts and `wallpapers/` to kebab-case.                                  |
