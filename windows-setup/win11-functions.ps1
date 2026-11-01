@@ -60,7 +60,7 @@ function Update-Patch-Windows {
     Install-Module -Name PSWindowsUpdate -Force
     Import-Module PSWindowsUpdate
     Add-WUServiceManager -MicrosoftUpdate
-    Install-WindowsUpdate -MicrosoftUpdate -AcceptAll -IgnoreReboot | Out-File "C:\$($env:COMPUTERNAME)_$(Get-Date -f yyyy-MM-dd)_MSUpdates.log" -Force
+    Install-WindowsUpdate -MicrosoftUpdate -AcceptAll -IgnoreReboot | Out-File "C:\$($env:COMPUTERNAME)_$(Get-Date -Format yyyy-MM-dd)_MSUpdates.log" -Force
     Write-Host "Windows patched successfully! Rebooting was suppressed, but you should probably reboot..."
 }
 
@@ -186,7 +186,9 @@ function Install-Chrome {
     $ChromePath = $env:TEMP
     $ChromeInstaller = "chrome_installer.exe"
     # SECURITY: HTTPS so the installer that runs elevated cannot be swapped in transit.
-    Invoke-WebRequest "https://dl.google.com/chrome/chrome_installer.exe" -OutFile "$ChromePath\$ChromeInstaller"
+    # NOTE: -UseBasicParsing avoids the Internet Explorer engine, which Windows PowerShell 5.1 needs
+    # otherwise and Windows 11 does not ship. PowerShell 7 accepts and ignores the switch.
+    Invoke-WebRequest "https://dl.google.com/chrome/chrome_installer.exe" -OutFile "$ChromePath\$ChromeInstaller" -UseBasicParsing
     Start-Process -FilePath "$ChromePath\$ChromeInstaller" -Args "/silent /install" -Verb RunAs -Wait
     Remove-Item "$ChromePath\$ChromeInstaller"
     Write-Host "Google Chrome installed successfully!"
@@ -209,6 +211,10 @@ function Install-OhMyPosh {
     # Oh My Posh v29+ requires PSReadLine 2.1+ for its init script.
     # Windows PowerShell 5.1 ships with PSReadLine 2.0 which is incompatible.
     Write-Host "Updating PSReadLine module..."
+    # Windows PowerShell 5.1 stops to ask for the NuGet provider unless it is already present.
+    if (-not (Get-PackageProvider -Name NuGet -ListAvailable -ErrorAction SilentlyContinue)) {
+        Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
+    }
     Install-Module -Name PSReadLine -Scope CurrentUser -Force -SkipPublisherCheck
 
     # Refresh PATH
@@ -305,7 +311,7 @@ $OmpInitLine
         }
 
         if (Test-Path $ProfilePath) {
-            $ProfileContent = Get-Content -Path $ProfilePath -Raw
+            $ProfileContent = Get-Content -Path $ProfilePath -Raw -Encoding UTF8
             if ($ProfileContent -match 'Initialize mise|oh-my-posh') {
                 # Replace existing initialization section with the new one
                 $UpdatedContent = ($ProfileContent -split "`n" | ForEach-Object {
@@ -314,14 +320,15 @@ $OmpInitLine
                 # Clean up any duplicate empty lines
                 $UpdatedContent = $UpdatedContent -replace "`n`n+", "`n"
                 $UpdatedContent = $UpdatedContent.TrimEnd() + "`n`n" + $MiseInit
-                Set-Content -Path $ProfilePath -Value $UpdatedContent -NoNewline
+                Set-Content -Path $ProfilePath -Value $UpdatedContent -NoNewline -Encoding UTF8
                 Write-Host "Updated mise and Oh My Posh configuration in $ProfilePath."
             } else {
-                Add-Content -Path $ProfilePath -Value "`n$MiseInit"
+                Add-Content -Path $ProfilePath -Value "`n$MiseInit" -Encoding UTF8
                 Write-Host "Added mise and Oh My Posh configuration to $ProfilePath."
             }
         } else {
-            Set-Content -Path $ProfilePath -Value $MiseInit
+            # NOTE: UTF8 here means UTF-8 with a BOM in 5.1, which both 5.1 and 7 read correctly.
+            Set-Content -Path $ProfilePath -Value $MiseInit -Encoding UTF8
             Write-Host "Created $ProfilePath with mise and Oh My Posh configuration."
         }
     }
@@ -339,10 +346,9 @@ $OmpInitLine
             Write-Host "Created Windows Terminal settings directory."
         }
 
-        # Copy settings with FiraCode Nerd Font configuration
-        $SettingsContent = Get-Content -Path $SourceSettings -Raw
+        # Copy-Item keeps the file byte for byte. Set-Content in 5.1 would re-encode it as ANSI.
         $DestSettingsPath = Join-Path $DestDir "settings.json"
-        Set-Content -Path $DestSettingsPath -Value $SettingsContent -Force
+        Copy-Item -Path $SourceSettings -Destination $DestSettingsPath -Force
         Write-Host "Windows Terminal settings configured successfully!"
     }
 
@@ -508,7 +514,6 @@ function Install-Fonts {
     Write-Host "Installing fonts..."
     $SourceFontsDir = Join-Path $ScriptDir "fonts"
     $SourceFontsFiraCodeDir = Join-Path $SourceFontsDir "FiraCode"
-    $DestFontsDir = "$env:WINDIR\Fonts"
     $TempDir = Join-Path $env:TEMP "nerd-fonts-download"
 
     # Create fonts directory if it doesn't exist
@@ -547,7 +552,7 @@ function Install-Fonts {
         $ZipPath = Join-Path $TempDir "FiraCode.zip"
 
         Write-Host "Downloading Fira Code Nerd Font from: $DownloadUrl"
-        Invoke-WebRequest -Uri $DownloadUrl -OutFile $ZipPath -ErrorAction Stop
+        Invoke-WebRequest -Uri $DownloadUrl -OutFile $ZipPath -UseBasicParsing -ErrorAction Stop
         Write-Host "Download completed."
 
         # Extract to temporary directory first
@@ -670,6 +675,8 @@ function Remove-OneDrive {
 # Helper: Remove built-in Windows bloatware (Xbox, consumer Teams/Chat, Widgets, etc.)
 # Uses the debloat_list.txt file for a customizable list of packages to remove.
 function Remove-Bloatware {
+    # NOTE: ForEach-Object runs its script block in this scope, so $Found is read after the loops.
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', 'Found', Justification = 'Assigned inside ForEach-Object, which runs in the caller scope.')]
     param(
         [string]$ScriptDir
     )
@@ -889,7 +896,8 @@ function Optimize-WindowsPrivacyPerformance {
             Write-Host "Recall optional feature disabled."
         }
     } catch {
-        # Not a Copilot+ PC / feature not present - nothing to do
+        # Not a Copilot+ PC, so the feature does not exist and there is nothing to do.
+        Write-Verbose "Recall optional feature not present: $_"
     }
 
     # --- Edge integration (disable telemetry & suggestions) ---
@@ -1088,7 +1096,7 @@ function Invoke-DebloatAndOptimize {
 }
 
 # 12. Schedule Automated Maintenance Tasks (orchestrator)
-function Schedule-MaintenanceTask {
+function Register-MaintenanceTask {
     Write-Host "Setting up automated Windows maintenance tasks..." -ForegroundColor Cyan
     Write-Host
 
@@ -1141,7 +1149,6 @@ function Schedule-MaintenanceTask {
 
     # --- Weekly Maintenance Task (Every Sunday at 2 AM) ---
     $WeeklyTaskName = "Windows 11 Maintenance - Weekly"
-    $WeeklyTaskPath = "\windows-setup\$WeeklyTaskName"
 
     try {
         # Create task trigger for every Sunday at 2 AM

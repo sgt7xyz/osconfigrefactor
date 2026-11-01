@@ -40,7 +40,7 @@ win11-setup.ps1 (menu loop, admin check)
         │     ├── Disable-UnneededServices
         │     ├── Optimize-ContextMenu
         │     └── Set-PowerPlan
-        ├── Schedule-MaintenanceTask (option 12)
+        ├── Register-MaintenanceTask (option 12)
         │     └── copies scripts/win11-maintenance.ps1 to C:\windows-setup, registers 2 tasks
         └── Invoke-All-Install-Tasks (option 13)
 
@@ -94,6 +94,14 @@ lists hold package IDs. The debloat list holds Appx names with wildcards, plus t
 `OneDrive`, which is handled by its own function.
 
 **Depends on:** Nothing.
+
+### PSScriptAnalyzerSettings.psd1
+
+**Purpose:** Lint settings for PSScriptAnalyzer. It turns on the compatibility rules for Windows
+PowerShell 5.1, the version built into Windows 11, and excludes three style rules that do not fit an
+interactive menu, each with its reason in a comment.
+
+**Depends on:** The PSScriptAnalyzer module.
 
 ### configs/, fonts/, and wallpapers/
 
@@ -156,7 +164,9 @@ of the Nerd Font, and `wallpapers/` holds the desktop images.
 * **Inputs:** None.
 * **Outputs:** Google Chrome installed.
 * **Why it exists:** Installs Chrome without the Store or a browser.
-* **Side effects:** Network call over HTTPS and an elevated installer run.
+* **Side effects:** Network call over HTTPS and an elevated installer run. It passes
+  `-UseBasicParsing`, because Windows PowerShell 5.1 otherwise needs the Internet Explorer engine,
+  which Windows 11 does not ship.
 
 ### Install-SystemFont and Test-FontInstalled
 
@@ -187,9 +197,11 @@ of the Nerd Font, and `wallpapers/` holds the desktop images.
 * **Inputs:** `-ScriptDir`.
 * **Outputs:** Two profile files, a theme file, and Terminal `settings.json`.
 * **Why it exists:** Oh My Posh needs PSReadLine 2.1 or newer, and Terminal will not start if its
-  configured font is missing, so the order matters.
+  configured font is missing, so the order matters. It installs the NuGet provider first if needed,
+  so Windows PowerShell 5.1 does not stop to ask for it.
 * **Side effects:** App installs, module install, and file writes. Earlier mise and Oh My Posh lines
-  in the profiles are replaced, and the Terminal settings file is overwritten.
+  in the profiles are replaced, and the profiles are written as UTF-8 with a BOM so 5.1 and 7 both
+  read them. The Terminal settings file is copied byte for byte over the existing one.
 
 ### Install-Wallpapers
 
@@ -285,7 +297,7 @@ of the Nerd Font, and `wallpapers/` holds the desktop images.
 * **Why it exists:** Keeps the most invasive changes behind one explicit, opt-in choice.
 * **Side effects:** Those of the helpers.
 
-### Schedule-MaintenanceTask
+### Register-MaintenanceTask
 
 * **Does:** Copies `scripts/win11-maintenance.ps1` to `C:\windows-setup`, creates a `logs` folder,
   and registers weekly and monthly tasks under `\windows-setup\` that run it as SYSTEM.
@@ -305,6 +317,10 @@ of the Nerd Font, and `wallpapers/` holds the desktop images.
 
 ## Known limitations or sharp edges
 
+* **Windows PowerShell 5.1 is the target.** Every script must run in the 5.1 that ships with
+  Windows 11. Use `PSScriptAnalyzerSettings.psd1` to check new code, and avoid PowerShell 7 only
+  syntax such as `??`, `?:`, and `&&`.
+
 * **winget cannot install itself.** `Install-Winget` runs `winget` to install App Installer, so
   on a machine without winget it fails. Install App Installer from the Microsoft Store first.
 * **Errors return to the menu.** Functions return on errors, so in option 13 later steps still run
@@ -321,11 +337,12 @@ of the Nerd Font, and `wallpapers/` holds the desktop images.
 
 ## Change log
 
-| Date       | Summary                                                                           |
-| :--------- | :-------------------------------------------------------------------------------- |
-| 2026-11-01 | Fixed the Chrome download URL, the Git excludes path, and exits inside functions. |
-| 2026-11-01 | Rewrote this file to the project template and renamed scripts to kebab-case.      |
-| 2024-11-01 | Added scheduled maintenance tasks with weekly and monthly modes.                  |
-| 2024-10-31 | Expanded privacy tweaks to Edge, Cortana, Explorer, and Search.                   |
-| 2024-10-30 | Reorganized the functions file and aligned menu and function numbers.             |
-| 2024-10-29 | Added the first debloating and optimization implementation.                       |
+| Date       | Summary                                                                              |
+| :--------- | :----------------------------------------------------------------------------------- |
+| 2026-11-01 | Added 5.1 compatibility fixes and lint settings, renamed `Register-MaintenanceTask`. |
+| 2026-11-01 | Fixed the Chrome download URL, the Git excludes path, and exits inside functions.    |
+| 2026-11-01 | Rewrote this file to the project template and renamed scripts to kebab-case.         |
+| 2024-11-01 | Added scheduled maintenance tasks with weekly and monthly modes.                     |
+| 2024-10-31 | Expanded privacy tweaks to Edge, Cortana, Explorer, and Search.                      |
+| 2024-10-30 | Reorganized the functions file and aligned menu and function numbers.                |
+| 2024-10-29 | Added the first debloating and optimization implementation.                          |

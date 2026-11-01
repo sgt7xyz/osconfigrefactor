@@ -136,6 +136,7 @@ Logs go to `C:\windows-setup\logs`. Remove the tasks in Task Scheduler if you no
 ├── winget_uninstall.txt     # Packages to uninstall
 ├── debloat_list.txt         # Built-in apps to remove
 ├── configs/                 # Terminal, Oh My Posh, and Git configs
+├── PSScriptAnalyzerSettings.psd1  # Lint rules and 5.1 compatibility checks
 ├── fonts/FiraCode/          # Offline Nerd Font files
 ├── wallpapers/              # Desktop wallpapers
 ├── images/                  # README images
@@ -155,12 +156,15 @@ Logs go to `C:\windows-setup\logs`. Remove the tasks in Task Scheduler if you no
 
 ## Testing
 
-There are no automated tests. Lint the scripts with PSScriptAnalyzer.
+There are no automated tests. Lint the scripts with PSScriptAnalyzer and the settings file in this
+repository, which also checks that every script stays compatible with Windows PowerShell 5.1.
 
 ```powershell
 Install-Module PSScriptAnalyzer -Scope CurrentUser
-Invoke-ScriptAnalyzer -Path . -Recurse
+Invoke-ScriptAnalyzer -Path . -Recurse -Settings .\PSScriptAnalyzerSettings.psd1
 ```
+
+The same command works from PowerShell 7 on macOS or Linux, with `./` in place of `.\`.
 
 Test full runs in a throwaway Windows 11 VM before using them on a real machine.
 

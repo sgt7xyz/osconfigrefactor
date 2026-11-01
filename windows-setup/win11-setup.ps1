@@ -89,7 +89,7 @@ while ($true) {
             Invoke-DebloatAndOptimize -ScriptDir $scriptDir
         }
         "12" {
-            Schedule-MaintenanceTask
+            Register-MaintenanceTask
         }
         "13" {
             Write-Host "Executing all setup steps..."
