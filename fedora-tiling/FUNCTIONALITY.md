@@ -16,7 +16,8 @@ Two terms used below:
 * *foot* is the Wayland terminal emulator that the Sway config launches.
 
 Everything is driven from an interactive menu grouped into five sections. Each option runs one step,
-and option 23 runs every step in order. After each choice the script waits for Enter.
+and option 22 runs every step in order and then lists any that failed. Steps 1 to 14 match
+debian-tiling number for number. After each choice the script waits for Enter.
 
 ## How the pieces connect
 
@@ -42,12 +43,14 @@ Read the files in this order.
 
 ### fedora-tiling-setup.sh
 
-**Purpose:** Entry point. Prints the grouped menu, reads a choice, and calls the matching functions.
+**Purpose:** Entry point. Holds the ordered list of menu entries and the menu loop that runs them.
 
 **Depends on:** `fedora-tiling-functions.sh`.
 
-It resolves its own directory with `dirname` and `realpath`. Option 5 runs the install and remove
-functions together. The file ends with `TODO(sgt7):` notes for Chrome and mise-en-place steps.
+It resolves its own directory with `dirname` and `realpath`. The `menu` array is the single place
+that sets step order, numbers, and labels. Option 2 runs the DNF tuning and the upgrade, and option
+3 runs the install and remove functions together. The file ends with `TODO(sgt7):` notes for
+Chrome and mise-en-place steps.
 
 The script runs with `set -euo pipefail` and changes into the repository directory, so the data
 files are found wherever it is started from. Every function call goes through `run_step`, so a
@@ -55,8 +58,8 @@ failing command stops only that step and the menu keeps running.
 
 ### fedora-tiling-functions.sh
 
-**Purpose:** Holds one function per setup step, plus `install_brave_browsers`, which no menu option
-calls yet.
+**Purpose:** Holds one function per setup step, plus helpers such as `enable_rpmfusion` and
+`install_codecs` that other steps call.
 
 **Depends on:** `sudo`, `dnf`, `rpm`, `flatpak`, `fwupdmgr`, `curl`, `wget`, `unzip`,
 `fc-cache`, `firewall-cmd`, `git`, and the data files in the repository.
@@ -122,7 +125,28 @@ finding fails the job.
 * **Outputs:** The step's output, plus an error line on failure.
 * **Why it exists:** Under `set -e` alone, any failing command would close the whole menu. Bash
   also ignores errexit inside `||` lists, so the helper pauses errexit in the menu shell instead.
-* **Side effects:** None of its own. A `cd` or variable change inside a step stays in its subshell.
+* **Side effects:** Adds the name of a failed step to `failed_steps`. A `cd` or variable change
+  inside a step stays in its subshell.
+
+### run_entry
+
+* **Does:** Splits one menu entry into its function names and runs each through `run_step`.
+* **Inputs:** A space separated list of function names.
+* **Outputs:** The output of each step.
+* **Why it exists:** Lets one menu option run several functions, such as install and remove.
+* **Side effects:** Those of the steps it runs.
+
+### run_menu
+
+* **Does:** Prints a grouped, numbered menu built from the entries it is given, reads a choice, and
+  runs that entry. The number after the last step runs every entry in order and then lists any
+  failed steps. `0` or end of input exits, and anything else is rejected.
+* **Inputs:** A title, then entries that are either a section title starting with `#` and a space,
+  or `function [function...]|Label`.
+* **Outputs:** The menu and the output of the chosen steps.
+* **Why it exists:** The numbers, the menu text, and Execute all come from one list, so they cannot
+  drift apart. The list keeps steps 1 to 14 identical to debian-tiling.
+* **Side effects:** Reads from the terminal. Input such as `08` is read as decimal.
 
 All other functions live in `fedora-tiling-functions.sh` and take no arguments.
 
@@ -362,23 +386,25 @@ All other functions live in `fedora-tiling-functions.sh` and take no arguments.
 * **Does:** Adds the Brave repository and installs the Brave browser.
 * **Inputs:** None.
 * **Outputs:** Brave installed.
-* **Why it exists:** Planned menu step. It is marked with a `TODO(sgt7):` and not called yet.
-* **Side effects:** Repository and package changes. Each `dnf` call prompts for confirmation.
+* **Why it exists:** Brave is not in the Fedora repositories. The repository file turns on
+  `gpgcheck` with Brave's signing key.
+* **Side effects:** Repository and package changes. `--overwrite` makes a rerun safe.
 
 ## Known limitations or sharp edges
 
-* **Owner's fix list.** `fixed.txt` flags steps 12, 14, 17, and 21 as needing work.
-* **Failures stop a step, not the run.** In option 23 a failed step prints an error and the next
-  step still runs. Scroll back to check for `failed with exit code` lines.
+* **Owner's fix list.** `fixed.txt` flags steps 12, 14, 17, and 21 as needing work. Those numbers
+  are from the old menu. They are now steps 7 (tiling), 10 (VLC), 9 (Git), and 19 (Docker).
+* **Failures stop a step, not the run.** In option 22 a failed step prints an error and the next
+  step still runs. The failed steps are listed again at the end.
 * **dnf5 only.** `install_docker` and `install_brave_browsers` use the dnf5 `addrepo` syntax, which
   matches the Fedora 41 or newer requirement in the README.
-* **Unused helpers.** `install_brave_browsers` is not wired into the menu, and no key binding calls
-  the volume scripts.
+* **Unused helpers.** No key binding calls the volume scripts.
 
 ## Change log
 
 | Date       | Summary                                                                                                               |
 | :--------- | :-------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-01 | Built the menu from one ordered list, matched steps 1 to 14 with debian-tiling, merged codecs into VLC, added Brave.  |
 | 2026-11-01 | Set GRUB to 2 seconds from any old value and added the packages the default Sway wallpaper needs.                     |
 | 2026-11-01 | Enabled RPM Fusion for codecs and VLC, fixed package names, installed rofi, and fixed the laptop panel.               |
 | 2026-11-01 | Locked firewalld to deny all inbound, verified the font checksum, and listed failed packages at the end.              |

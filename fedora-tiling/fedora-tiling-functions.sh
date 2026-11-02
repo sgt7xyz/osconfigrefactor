@@ -375,9 +375,11 @@ EOF'
 }
 
 # Install Brave web browser.
-# TODO(sgt7): Add this to the menu. It is not called from fedora-tiling-setup.sh yet.
+# SECURITY: The Brave repository file turns on gpgcheck with Brave's signing key.
 install_brave_browsers() {
-	sudo dnf install dnf-plugins-core
-	sudo dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
-	sudo dnf install brave-browser
+    sudo dnf -y install dnf-plugins-core
+    # --overwrite lets a rerun replace the repository file instead of failing.
+    sudo dnf config-manager addrepo --overwrite --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
+    sudo dnf -y install brave-browser
+    echo 'Brave browser installed successfully!'
 }

@@ -17,8 +17,9 @@ taste.
 
 ## Architecture
 
-`fedora-tiling-setup.sh` shows a grouped, numbered menu and calls functions from
-`fedora-tiling-functions.sh`. Package lists and dotfiles are read from the repository at run time.
+`fedora-tiling-setup.sh` builds a grouped, numbered menu from one ordered list of steps and calls
+functions from `fedora-tiling-functions.sh`. Package lists and dotfiles are read from the repository
+at run time.
 
 ```text
 fedora-tiling-setup.sh --> fedora-tiling-functions.sh --> dnf, flatpak, fwupdmgr, firewalld, docker, git
@@ -72,34 +73,35 @@ This project reads no environment variables. Behavior is controlled by the files
 
 ## Usage
 
-Run `./fedora-tiling-setup.sh` and pick a step by number. Choose **23** to run every step in order.
+Run the setup script and pick a step by number. Choose **22** to run every step in order. When
+it finishes, any steps that failed are listed together. Steps 1 to 14 are the same in
+debian-tiling, so the same number means the same step on both systems.
 
-| Option | Group                | Step                                        |
-| -----: | :------------------- | :------------------------------------------ |
-|      1 | System preparation   | Backup configs                              |
-|      2 | System preparation   | Update DNF for faster downloads             |
-|      3 | System preparation   | Upgrade Fedora                              |
-|      4 | System preparation   | Update firmware                             |
-|      5 | Package management   | Install and remove packages                 |
-|      6 | Package management   | Enable Flathub repository                   |
-|      7 | Package management   | Install development tools                   |
-|      8 | Package management   | Install codecs                              |
-|      9 | Environment setup    | Create custom directories                   |
-|     10 | Environment setup    | Install Nerd font                           |
-|     11 | Environment setup    | Copy wallpapers                             |
-|     12 | Environment setup    | Customize tiling settings                   |
-|     13 | Environment setup    | Customize vimrc file                        |
-|     14 | Applications         | Install VLC, plugins, and restricted extras |
-|     15 | Applications         | Install VSCode                              |
-|     16 | Applications         | Install OBS Studio                          |
-|     17 | Applications         | Configure Git                               |
-|     18 | System configuration | Install and enable firewalld                |
-|     19 | System configuration | Configure swappiness                        |
-|     20 | System configuration | Speed up boot time                          |
-|     21 | System configuration | Install Docker                              |
-|     22 | System configuration | Install VirtualBox                          |
-|     23 | All                  | Execute all steps                           |
-|      0 | Exit                 | Exit                                        |
+| Option | Group                | Step                                   |
+| -----: | :------------------- | :------------------------------------- |
+|      1 | System preparation   | Back up shell dotfiles                 |
+|      2 | System preparation   | Update and upgrade the system          |
+|      3 | System preparation   | Install and remove packages            |
+|      4 | Environment setup    | Create custom directories              |
+|      5 | Environment setup    | Install Nerd font                      |
+|      6 | Environment setup    | Copy wallpapers                        |
+|      7 | Environment setup    | Install Sway, foot, and rofi configs   |
+|      8 | Environment setup    | Customize vimrc file                   |
+|      9 | Environment setup    | Configure Git                          |
+|     10 | Applications         | Install VLC, plugins, and codecs       |
+|     11 | Applications         | Install VSCode                         |
+|     12 | System configuration | Enable the firewall (deny all inbound) |
+|     13 | System configuration | Configure swappiness                   |
+|     14 | System configuration | Speed up boot time                     |
+|     15 | Fedora extras        | Update firmware                        |
+|     16 | Fedora extras        | Enable Flathub repository              |
+|     17 | Fedora extras        | Install development tools              |
+|     18 | Fedora extras        | Install OBS Studio                     |
+|     19 | Fedora extras        | Install Docker                         |
+|     20 | Fedora extras        | Install VirtualBox                     |
+|     21 | Fedora extras        | Install Brave browser                  |
+|     22 | All                  | Execute all steps                      |
+|      0 | Exit                 | Exit                                   |
 
 ## Project structure
 
@@ -124,12 +126,13 @@ Run `./fedora-tiling-setup.sh` and pick a step by number. Choose **23** to run e
 
 * Review every script before running it. Most steps call `sudo`.
 * Step 1 backs up `~/.bashrc`, `~/.bash_profile`, and `~/.bash_logout` to `~/.config-backups`.
-* Steps 15 and 22 import vendor signing keys and enable `gpgcheck` for their repositories.
-* Step 10 checks the Nerd Font download against its published SHA-256 before installing it.
-* Step 18 makes a stripped `public` zone the firewalld default, so it rejects every inbound
+* Step 5 checks the Nerd Font download against its published SHA-256 before installing it.
+* Step 10 enables RPM Fusion, whose release packages install its signing keys.
+* Steps 11 and 20 import vendor signing keys and enable `gpgcheck` for their repositories.
+* Step 12 makes a stripped `public` zone the firewalld default, so it rejects every inbound
   connection the host did not start. Replies to outbound traffic still get in.
-* Step 21 adds your user to the `docker` group, which is root equivalent on this host.
-* No credentials are stored. Set your Git name and email by hand after step 17.
+* Step 19 adds your user to the `docker` group, which is root equivalent on this host.
+* No credentials are stored. Set your Git name and email by hand after step 9.
 
 ## Testing
 
@@ -146,12 +149,12 @@ Test full runs in a throwaway Fedora VM before using them on a real machine.
 | Problem                                       | Fix                                                          |
 | :-------------------------------------------- | :----------------------------------------------------------- |
 | A step prints `failed with exit code`         | Read the error above it, fix the cause, and rerun that step. |
-| `docker` commands fail with permission denied | Reboot after step 21 so the group change takes effect.       |
-| VirtualBox USB devices are missing            | Log out and back in after step 22.                           |
+| `docker` commands fail with permission denied | Reboot after step 19 so the group change takes effect.       |
+| VirtualBox USB devices are missing            | Log out and back in after step 20.                           |
 
 ## Roadmap
 
-* Add menu steps for Google Chrome, mise, and the existing Brave browser function.
+* Add menu steps for Google Chrome and mise.
 * Add a waybar config to `configs/waybar/`.
 * Work through the items in `fixed.txt`.
 

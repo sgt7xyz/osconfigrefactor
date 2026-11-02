@@ -9,8 +9,9 @@ window manager. It installs Xorg, i3, polybar, rofi, alacritty, picom, and a set
 tools, then applies fonts, wallpapers, terminal and Vim settings, a firewall, kernel and boot
 tweaks, VSCode, and Git defaults.
 
-Everything is driven from an interactive numbered menu. Each option runs one step, so a single step
-can be rerun on its own. Option 14 runs every step in order.
+Everything is driven from an interactive menu grouped into five sections. Each option runs one
+step, so a single step can be rerun on its own. Option 16 runs every step in order and then lists
+any that failed. Steps 1 to 14 match fedora-tiling number for number.
 
 Two terms used below:
 
@@ -46,12 +47,13 @@ Read the files in this order.
 
 ### debian-tiling-setup.sh
 
-**Purpose:** Entry point. Prints the menu, reads a choice, and calls the functions for that step.
+**Purpose:** Entry point. Holds the ordered list of menu entries and the menu loop that runs them.
 
 **Depends on:** `debian-tiling-functions.sh`.
 
 It resolves its own directory with `dirname` and `realpath` so the functions file is always found.
-Option 1 runs four functions together and option 12 runs two.
+The `menu` array is the single place that sets step order, numbers, and labels. Option 3 runs the
+install and remove functions together, and option 11 runs both VSCode functions.
 
 The script runs with `set -euo pipefail` and changes into the repository directory, so the data
 files are found wherever it is started from. Every function call goes through `run_step`, so a
@@ -131,7 +133,28 @@ finding fails the job.
 * **Outputs:** The step's output, plus an error line on failure.
 * **Why it exists:** Under `set -e` alone, any failing command would close the whole menu. Bash
   also ignores errexit inside `||` lists, so the helper pauses errexit in the menu shell instead.
-* **Side effects:** None of its own. A `cd` or variable change inside a step stays in its subshell.
+* **Side effects:** Adds the name of a failed step to `failed_steps`. A `cd` or variable change
+  inside a step stays in its subshell.
+
+### run_entry
+
+* **Does:** Splits one menu entry into its function names and runs each through `run_step`.
+* **Inputs:** A space separated list of function names.
+* **Outputs:** The output of each step.
+* **Why it exists:** Lets one menu option run several functions, such as install and remove.
+* **Side effects:** Those of the steps it runs.
+
+### run_menu
+
+* **Does:** Prints a grouped, numbered menu built from the entries it is given, reads a choice, and
+  runs that entry. The number after the last step runs every entry in order and then lists any
+  failed steps. `0` or end of input exits, and anything else is rejected.
+* **Inputs:** A title, then entries that are either a section title starting with `#` and a space,
+  or `function [function...]|Label`.
+* **Outputs:** The menu and the output of the chosen steps.
+* **Why it exists:** The numbers, the menu text, and Execute all come from one list, so they cannot
+  drift apart. The list keeps steps 1 to 14 identical to fedora-tiling.
+* **Side effects:** Reads from the terminal. Input such as `08` is read as decimal.
 
 All other functions live in `debian-tiling-functions.sh` and take no arguments.
 
@@ -305,8 +328,8 @@ All other functions live in `debian-tiling-functions.sh` and take no arguments.
 
 ## Known limitations or sharp edges
 
-* **Failures stop a step, not the run.** In option 15 a failed step prints an error and the next
-  step still runs. Scroll back to check for `failed with exit code` lines.
+* **Failures stop a step, not the run.** In option 16 a failed step prints an error and the next
+  step still runs. The failed steps are listed again at the end.
 * **X settings are not installed.** `.Xresources`, `.xsessionrc`, and `xorg.conf.new` must be
   copied by hand, because they hold one specific monitor layout.
 * **Debian 12 lacks fastfetch.** On Debian 12 the package step lists `fastfetch` as failed, because
@@ -319,6 +342,7 @@ All other functions live in `debian-tiling-functions.sh` and take no arguments.
 
 | Date       | Summary                                                                                                    |
 | :--------- | :--------------------------------------------------------------------------------------------------------- |
+| 2026-11-01 | Built the menu from one ordered list, matched steps 1 to 14 with fedora-tiling, and listed failed steps.   |
 | 2026-11-01 | Installed all desktop configs, fixed the menu numbering, package names, typos, and a 2 second GRUB delay.  |
 | 2026-11-01 | Locked UFW to deny all inbound, verified the font checksum, and listed failed packages at the end.         |
 | 2026-11-01 | Added a ShellCheck workflow with a pinned, checksum verified release and checkout SHA.                     |
