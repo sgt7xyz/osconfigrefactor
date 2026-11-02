@@ -7,10 +7,10 @@
 # Author:   sgt7 LLC
 # ---------------------------------------------------------------
 
-# 2. Update DNF for faster downloads.
-# Parallel downloads and the fastest mirror cut the time of every later dnf step.
+# Parallel downloads and the fastest mirror cut the time of every later dnf step, so
+# update_system runs this first.
 # The backup is taken once and each line is only added once, so the step is safe to rerun.
-update_dnf() {
+configure_dnf() {
     [ -f /etc/dnf/dnf.original ] || sudo cp -p /etc/dnf/dnf.conf /etc/dnf/dnf.original
     local setting
     for setting in 'max_parallel_downloads=10' 'fastestmirror=true'; do
@@ -19,20 +19,11 @@ update_dnf() {
     echo 'DNF configuration updated for faster downloads!'
 }
 
-# 3. Upgrade Fedora.
-upgrade_fedora() {
+# Applies the DNF speed settings, then upgrades every installed package.
+update_system() {
+    configure_dnf
     sudo dnf -y upgrade
     echo 'System updated successfully!'
-}
-
-# 4. Update firmware.
-# Refreshes LVFS metadata first, because a stale cache hides available firmware updates.
-# NOTE: fwupdmgr exits with 2 when there is nothing to update, so that case is not an error.
-update_firmware() {
-    sudo fwupdmgr refresh --force
-    sudo fwupdmgr get-updates || echo 'No firmware updates available.'
-    sudo fwupdmgr update || echo 'No firmware updates applied.'
-    echo 'Firmware update completed!'
 }
 
 # Package names live in package_install.txt so the list can change without editing code.
@@ -48,18 +39,16 @@ remove_packages() {
     echo 'Packages removed successfully!'
 }
 
-# 6. Enable Flathub repository.
-# Fedora does not enable the full Flathub remote by default, so it is added here.
-enable_flathub() {
-    sudo dnf -y install flatpak
-    sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-    echo 'Flathub repository enabled successfully!'
-}
-
-# 7. Install development tools.
-install_development_tools(){
-    sudo dnf -y group install development-tools
-    echo 'Development tools installed successfully!'
+# Installs the Sway, foot, and rofi configs plus the volume helpers. There is no waybar config yet,
+# so Sway keeps the bar from Fedora's own /usr/share/sway/config.d files.
+customize_tiling() {
+    install_config configs/sway/config ~/.config/sway/config
+    install_config configs/foot/foot.ini ~/.config/foot/foot.ini
+    install_config configs/rofi/config.rasi ~/.config/rofi/config.rasi
+    install_config configs/rofi/catppuccin-macchiato.rasi ~/.config/rofi/catppuccin-macchiato.rasi
+    install_config scripts/volume-down.sh ~/scripts/volume-down.sh
+    install_config scripts/volume-up.sh ~/scripts/volume-up.sh
+    echo 'Tiling configs installed. Press Mod+Shift+c in Sway to reload them.'
 }
 
 # Enables the RPM Fusion free and nonfree repositories, which carry the full ffmpeg build and the
@@ -77,7 +66,6 @@ enable_rpmfusion() {
     echo 'RPM Fusion repositories enabled.'
 }
 
-# 8. Install codecs.
 # Swaps the patent-limited ffmpeg-free build for full ffmpeg so common video formats play.
 install_codecs() {
     enable_rpmfusion
@@ -85,23 +73,9 @@ install_codecs() {
     echo 'Codecs installed successfully!'
 }
 
-# 12. Customize tiling settings.
-# Installs the Sway, foot, and rofi configs plus the volume helpers. There is no waybar config yet,
-# so Sway keeps the bar from Fedora's own /usr/share/sway/config.d files.
-customize_tiling() {
-    install_config configs/sway/config ~/.config/sway/config
-    install_config configs/foot/foot.ini ~/.config/foot/foot.ini
-    install_config configs/rofi/config.rasi ~/.config/rofi/config.rasi
-    install_config configs/rofi/catppuccin-macchiato.rasi ~/.config/rofi/catppuccin-macchiato.rasi
-    install_config scripts/volume-down.sh ~/scripts/volume-down.sh
-    install_config scripts/volume-up.sh ~/scripts/volume-up.sh
-    echo 'Tiling configs installed. Press Mod+Shift+c in Sway to reload them.'
-}
-
-# 14. Install VLC, plugins, and restricted extras.
 # The freeworld and ugly packages come from RPM Fusion, so install_codecs enables it and swaps in
 # full ffmpeg first.
-install_vlc_restricted_extras() {
+install_vlc() {
     install_codecs
     sudo dnf -y install vlc vlc-plugins-freeworld
     sudo dnf -y install gstreamer1-plugins-base gstreamer1-plugins-good gstreamer1-plugins-bad-free \
@@ -109,7 +83,6 @@ install_vlc_restricted_extras() {
     echo 'VLC and multimedia codecs installed successfully!'
 }
 
-# 15. Install VSCode.
 # SECURITY: Imports the Microsoft signing key and enables gpgcheck so dnf verifies VSCode packages.
 install_vscode() {
     echo 'Setting up VSCode repository...'
@@ -124,20 +97,9 @@ install_vscode() {
     echo 'VSCode installed successfully!'
 }
 
-# 16. Install OBS Studio.
-# The Flathub build is the one maintained by the OBS project itself.
-install_obs() {
-    echo 'Installing OBS Studio via Flatpak...'
-    enable_flathub
-    sudo flatpak install flathub com.obsproject.Studio -y
-    mkdir -p ~/.var/app/com.obsproject.Studio/config/obs-studio
-    echo 'OBS Studio installed and configured successfully!'
-}
-
-# 18. Install and enable firewalld.
 # SECURITY: A workstation offers no network services, so every inbound connection the host did not
 # start is rejected. firewalld is stateful, so replies to traffic the host started are still let in.
-install_firewalld_enable() {
+configure_firewall() {
     # firewalld usually ships with Fedora, so this install is a no-op unless it was removed.
     sudo dnf -y install firewalld
     sudo dnf -y install firewall-config
@@ -167,10 +129,9 @@ install_firewalld_enable() {
     echo "firewalld enabled. Check that every network interface above is in the $zone zone."
 }
 
-# 20. Speed up boot time.
 # Backs up the GRUB config once, so a rerun cannot replace the original with an edited copy.
 # Two seconds keeps the menu reachable for an older kernel or recovery mode.
-speed_up_boot_time() {
+configure_boot_time() {
     [ -f /etc/default/grub.original ] || sudo cp -p /etc/default/grub /etc/default/grub.original
     sudo sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/' /etc/default/grub
     # Fedora has no update-grub wrapper, so the config is regenerated directly.
@@ -179,7 +140,38 @@ speed_up_boot_time() {
     echo 'Boot time speed configured successfully!'
 }
 
-# 21. Install Docker.
+# Refreshes LVFS metadata first, because a stale cache hides available firmware updates.
+# NOTE: fwupdmgr exits with 2 when there is nothing to update, so that case is not an error.
+update_firmware() {
+    sudo fwupdmgr refresh --force
+    sudo fwupdmgr get-updates || echo 'No firmware updates available.'
+    sudo fwupdmgr update || echo 'No firmware updates applied.'
+    echo 'Firmware update completed!'
+}
+
+# Fedora does not enable the full Flathub remote by default, so it is added here.
+enable_flathub() {
+    sudo dnf -y install flatpak
+    sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+    echo 'Flathub repository enabled successfully!'
+}
+
+# Compilers and build tools, also needed to build the VirtualBox kernel modules.
+install_development_tools() {
+    sudo dnf -y group install development-tools
+    echo 'Development tools installed successfully!'
+}
+
+# The Flathub build is the one maintained by the OBS project itself.
+install_obs() {
+    echo 'Installing OBS Studio via Flatpak...'
+    enable_flathub
+    sudo flatpak install flathub com.obsproject.Studio -y
+    mkdir -p ~/.var/app/com.obsproject.Studio/config/obs-studio
+    echo 'OBS Studio installed and configured successfully!'
+}
+
+# Installs Docker CE from Docker's own repository, which is newer than the distro packages.
 install_docker() {
     # Distro Docker packages conflict with docker-ce, so they are removed first.
     # On a fresh install none of them are present, so a failed remove is not an error.
@@ -209,7 +201,7 @@ install_docker() {
     echo 'User added to the docker group. You need to reboot in order for this to take effect.'
 }
 
-# 22. Install VirtualBox.
+# Installs VirtualBox from Oracle's repository and builds its kernel modules with DKMS.
 install_virtualbox() {
     # Compilers, kernel headers, and DKMS are needed to build the VirtualBox kernel modules.
     install_development_tools
@@ -238,9 +230,9 @@ EOF'
     echo 'User added to the vboxusers group. You may need to log out and log back in for this to take effect.'
 }
 
-# Install Brave web browser.
+# Installs the Brave browser from Brave's own repository.
 # SECURITY: The Brave repository file turns on gpgcheck with Brave's signing key.
-install_brave_browsers() {
+install_brave() {
     sudo dnf -y install dnf-plugins-core
     # --overwrite lets a rerun replace the repository file instead of failing.
     sudo dnf config-manager addrepo --overwrite --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo

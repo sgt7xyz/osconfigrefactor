@@ -54,7 +54,7 @@ Read the files in this order.
 
 It resolves its own directory with `dirname` and `realpath` so the functions file is always found.
 The `menu` array is the single place that sets step order, numbers, and labels. Option 3 runs the
-install and remove functions together, and option 11 runs both VSCode functions.
+install and remove functions together.
 
 The script runs with `set -euo pipefail` and changes into the repository directory, so the data
 files are found wherever it is started from. Every function call goes through `run_step`, so a
@@ -138,7 +138,13 @@ finding fails the job.
 
 ## Function entries
 
-### run_step
+Step functions take no arguments. They are listed in menu order, after the helpers they use.
+
+### Shared functions in common-functions.sh
+
+These entries describe `common-functions.sh`, which is identical in both tiling repositories.
+
+#### run_step
 
 * **Does:** Runs one step function in a subshell with errexit on, then prints the exit code if the
   step failed.
@@ -149,7 +155,7 @@ finding fails the job.
 * **Side effects:** Adds the name of a failed step to `failed_steps`. A `cd` or variable change
   inside a step stays in its subshell.
 
-### run_entry
+#### run_entry
 
 * **Does:** Splits one menu entry into its function names and runs each through `run_step`.
 * **Inputs:** A space separated list of function names.
@@ -157,7 +163,7 @@ finding fails the job.
 * **Why it exists:** Lets one menu option run several functions, such as install and remove.
 * **Side effects:** Those of the steps it runs.
 
-### run_menu
+#### run_menu
 
 * **Does:** Prints a grouped, numbered menu built from the entries it is given, reads a choice, and
   runs that entry. The number after the last step runs every entry in order and then lists any
@@ -166,94 +172,21 @@ finding fails the job.
   or `function [function...]|Label`.
 * **Outputs:** The menu and the output of the chosen steps.
 * **Why it exists:** The numbers, the menu text, and Execute all come from one list, so they cannot
-  drift apart. The list keeps steps 1 to 14 identical to fedora-tiling.
+  drift apart. Each repository's list keeps steps 1 to 14 the same as the other's.
 * **Side effects:** Reads from the terminal. Input such as `08` is read as decimal.
 
-The entries above and the shared steps `backup_configs`, `create_directories`, `install_font`,
-`copy_wallpapers`, `configure_vimrc`, `configure_git`, `configure_swappiness`, `apply_package_list`,
-and `install_config` live in `common-functions.sh`. The rest live in `debian-tiling-functions.sh`.
-Step functions take no arguments.
+#### apply_package_list
 
-### backup_configs
-
-* **Does:** Copies `~/.bashrc`, `~/.profile`, `~/.bash_profile`, and `~/.bash_logout` into
-  `~/.config-backups`.
-* **Inputs:** Those files. Debian normally has `~/.profile` and Fedora `~/.bash_profile`.
-* **Outputs:** A backup directory, with a note for each file that is missing.
-* **Why it exists:** Keeps the stock dotfiles in case `stow` or a later step replaces them.
-* **Side effects:** File writes. Safe to rerun, but it overwrites the earlier backups.
-
-### update_debian
-
-* **Does:** Refreshes the apt index and upgrades installed packages.
-* **Inputs:** None.
-* **Outputs:** Upgraded packages.
-* **Why it exists:** Later installs need a current index.
-* **Side effects:** Network calls and system package changes through `sudo`.
-
-### apply_package_list
-
-* **Does:** Runs a package command, such as `apt-get install`, once per name in a list file.
+* **Does:** Runs a package command, such as `apt-get install` or
+  `dnf install`, once per name in a list file.
 * **Inputs:** The list file, then the command to run. Blank lines and `#` comments are skipped.
 * **Outputs:** A list of every package that failed, and a non-zero return if any did.
 * **Why it exists:** One bad name should not stop the rest, but it must not be lost in the scroll
-  either. The list is read on its own file descriptor so `apt-get` cannot consume it from stdin.
+  either. The list is read on its own file descriptor so the package tool cannot consume
+  it from stdin.
 * **Side effects:** Whatever the command does.
 
-### install_packages
-
-* **Does:** Installs each package in `package_install.txt` through `apply_package_list`.
-* **Inputs:** `package_install.txt`. Failed packages are listed at the end and fail the step.
-* **Outputs:** Installed packages.
-* **Why it exists:** Keeps the package list in data instead of code.
-* **Side effects:** Network calls and system package changes through `sudo`.
-
-### remove_packages
-
-* **Does:** Purges each package in `package_remove.txt`, then runs `apt-get autoremove`.
-* **Inputs:** `package_remove.txt`. Failed packages are listed at the end and fail the step.
-* **Outputs:** Removed packages.
-* **Why it exists:** Removes software that is not wanted on the desktop.
-* **Side effects:** System package removal through `sudo`.
-
-### create_directories
-
-* **Does:** Creates `~/.config`, `~/dotfiles`, `~/.local/share/themes`, `~/.local/share/fonts`,
-  `~/.local/share/icons`, `~/software`, `~/scripts`, and `~/Pictures/wallpapers`.
-* **Inputs:** None.
-* **Outputs:** New directories.
-* **Why it exists:** The font, wallpaper, and tiling steps copy into these paths.
-* **Side effects:** Directory creation.
-
-### install_font
-
-* **Does:** Downloads the DroidSansMono Nerd Font v3.4.0 zip, checks its SHA-256, unpacks it in
-  `~/fonttmp`, copies the `.otf` files into `~/.local/share/fonts`, rebuilds the font cache, and
-  removes the temporary directory.
-* **Inputs:** A pinned GitHub release URL and the checksum published with that release.
-* **Outputs:** Installed user fonts.
-* **Why it exists:** Polybar and the terminal theme use Nerd Font glyphs.
-* **Side effects:** Network call and file writes. It works with full paths and never changes the
-  working directory.
-
-### configure_console
-
-* **Does:** Runs `dpkg-reconfigure console-setup`.
-* **Inputs:** Answers typed into the interactive dialog.
-* **Outputs:** A new console font and size.
-* **Why it exists:** Makes the text console readable on high resolution screens.
-* **Side effects:** System configuration change. Stops for user input.
-
-### copy_wallpapers
-
-* **Does:** Copies every file in `wallpapers/` to `~/Pictures/wallpapers/`, or fails the step if
-  the folder is missing.
-* **Inputs:** `wallpapers/`.
-* **Outputs:** Image files.
-* **Why it exists:** `i3config` sets the wallpaper from this folder with feh.
-* **Side effects:** File writes.
-
-### install_config
+#### install_config
 
 * **Does:** Copies one file into place, creating its folder. If a different file is already there,
   it is first copied to `~/.config-backups` under the same relative path with a timestamp.
@@ -262,7 +195,97 @@ Step functions take no arguments.
 * **Why it exists:** Rerunning the tiling step must not silently destroy a hand edited config.
 * **Side effects:** File writes.
 
-### customize_tiling
+#### backup_configs
+
+* **Does:** Copies `~/.bashrc`, `~/.profile`, `~/.bash_profile`, and `~/.bash_logout` into
+  `~/.config-backups`.
+* **Inputs:** Those files. Debian normally has `~/.profile` and Fedora `~/.bash_profile`.
+* **Outputs:** A backup directory, with a note for each file that is missing.
+* **Why it exists:** Keeps the stock dotfiles in case `stow` or a later step replaces them.
+* **Side effects:** File writes. Safe to rerun, but it overwrites the earlier backups.
+
+#### create_directories
+
+* **Does:** Creates `~/.config`, `~/dotfiles`, `~/.local/share/themes`, `~/.local/share/fonts`,
+  `~/.local/share/icons`, `~/software`, `~/scripts`, and `~/Pictures/wallpapers`.
+* **Inputs:** None.
+* **Outputs:** New directories.
+* **Why it exists:** The font, wallpaper, and tiling steps copy into these paths.
+* **Side effects:** Directory creation.
+
+#### install_font
+
+* **Does:** Downloads the DroidSansMono Nerd Font v3.4.0 zip into `~/fonttmp`, checks its
+  SHA-256, copies the `.otf` files into `~/.local/share/fonts`, rebuilds the font cache, and removes
+  the temporary folder.
+* **Inputs:** A pinned GitHub release URL and the checksum published with that release.
+* **Outputs:** Installed user fonts.
+* **Why it exists:** The bar, launcher, and terminal use Nerd Font glyphs.
+* **Side effects:** Network call and file writes. It works with full paths and never changes the
+  working directory.
+
+#### copy_wallpapers
+
+* **Does:** Copies every file in `wallpapers/` to `~/Pictures/wallpapers/`, or fails the step if
+  the folder is missing.
+* **Inputs:** `wallpapers/`.
+* **Outputs:** Image files.
+* **Why it exists:** The window manager config sets the wallpaper from this folder.
+* **Side effects:** File writes.
+
+#### configure_vimrc
+
+* **Does:** Writes a `~/.vimrc` that silences the bell and turns on syntax, line numbers, and
+  mouse support.
+* **Inputs:** None.
+* **Outputs:** `~/.vimrc`.
+* **Why it exists:** Gives Vim usable defaults.
+* **Side effects:** Overwrites any existing `~/.vimrc`.
+
+#### configure_git
+
+* **Does:** Copies `configs/.gitignore_global` to the home directory if found, sets global Git
+  defaults, and prints the resulting config.
+* **Inputs:** `configs/.gitignore_global`.
+* **Outputs:** `~/.gitignore_global` and changes to `~/.gitconfig`.
+* **Why it exists:** Gives every new repository the same defaults.
+* **Side effects:** User file writes. Name and email are left for the user.
+
+#### configure_swappiness
+
+* **Does:** Writes `vm.swappiness = 10` to `/etc/sysctl.d/swappiness.conf` and applies it.
+* **Inputs:** None.
+* **Outputs:** A sysctl file and the before and after values on screen.
+* **Why it exists:** Keeps the desktop in RAM longer before swapping.
+* **Side effects:** System file write. Persists across reboots.
+
+### Debian functions in debian-tiling-functions.sh
+
+#### update_system
+
+* **Does:** Refreshes the apt index and upgrades installed packages.
+* **Inputs:** None.
+* **Outputs:** Upgraded packages.
+* **Why it exists:** Later installs need a current index.
+* **Side effects:** Network calls and system package changes through `sudo`.
+
+#### install_packages
+
+* **Does:** Installs each package in `package_install.txt` through `apply_package_list`.
+* **Inputs:** `package_install.txt`. Failed packages are listed at the end and fail the step.
+* **Outputs:** Installed packages.
+* **Why it exists:** Keeps the package list in data instead of code.
+* **Side effects:** Network calls and system package changes through `sudo`.
+
+#### remove_packages
+
+* **Does:** Purges each package in `package_remove.txt`, then runs `apt-get autoremove`.
+* **Inputs:** `package_remove.txt`. Failed packages are listed at the end and fail the step.
+* **Outputs:** Removed packages.
+* **Why it exists:** Removes software that is not wanted on the desktop.
+* **Side effects:** System package removal through `sudo`.
+
+#### customize_tiling
 
 * **Does:** Installs the i3, polybar, rofi, picom, and alacritty configs and the two volume helpers
   through `install_config`, and makes the polybar launcher executable.
@@ -273,16 +296,7 @@ Step functions take no arguments.
   for 0.13 and newer and the YAML files for older releases. `.Xresources`, `.xsessionrc`, and
   `xorg.conf.new` are tuned for one monitor setup and are not installed.
 
-### configure_vimrc
-
-* **Does:** Writes a `~/.vimrc` that silences the bell and turns on syntax, line numbers, and
-  mouse support.
-* **Inputs:** None.
-* **Outputs:** `~/.vimrc`.
-* **Why it exists:** Gives Vim usable defaults.
-* **Side effects:** Overwrites any existing `~/.vimrc`.
-
-### install_vlc_restricted_extras
+#### install_vlc
 
 * **Does:** Installs VLC, two plugins, and extra codec packages.
 * **Inputs:** None.
@@ -290,7 +304,17 @@ Step functions take no arguments.
 * **Why it exists:** Debian does not play some common formats out of the box.
 * **Side effects:** Network calls and system package changes.
 
-### install_ufw_enable
+#### install_vscode
+
+* **Does:** Installs `wget` and `gpg`, stores the Microsoft signing key under `/etc/apt/keyrings`,
+  adds the VSCode apt repository, refreshes apt, and installs the `code` package.
+* **Inputs:** None.
+* **Outputs:** A keyring file, `/etc/apt/sources.list.d/vscode.list`, and VSCode installed.
+* **Why it exists:** VSCode is not in the Debian archive. The key lets apt verify its packages.
+* **Side effects:** Network calls, system file writes, and package changes. The key is converted
+  in a temporary file, so nothing is written into the repository folder.
+
+#### configure_firewall
 
 * **Does:** Installs UFW, deletes its stock mDNS and UPnP accept rules, sets incoming to deny and
   outgoing to allow, enables it without a prompt, and prints the status.
@@ -302,15 +326,7 @@ Step functions take no arguments.
 * **Side effects:** Firewall rule changes. Local network discovery, such as finding printers or
   `.local` names over mDNS, stops working.
 
-### configure_swappiness
-
-* **Does:** Writes `vm.swappiness = 10` to `/etc/sysctl.d/swappiness.conf` and applies it.
-* **Inputs:** None.
-* **Outputs:** A sysctl file and the before and after values on screen.
-* **Why it exists:** Keeps the desktop in RAM longer before swapping.
-* **Side effects:** System file write. Persists across reboots.
-
-### speed_boot_time
+#### configure_boot_time
 
 * **Does:** Backs up `/etc/default/grub`, sets `GRUB_TIMEOUT` to `2` whatever its old value, and
   runs `update-grub`.
@@ -319,31 +335,13 @@ Step functions take no arguments.
 * **Why it exists:** Speeds up boot while leaving time to pick an older kernel or recovery mode.
 * **Side effects:** Boot configuration change. The backup is only made once.
 
-### prep_for_vscode_install
+#### configure_console
 
-* **Does:** Installs `wget` and `gpg`, adds the Microsoft signing key under `/etc/apt/keyrings`,
-  and adds the VSCode apt repository.
-* **Inputs:** None.
-* **Outputs:** A keyring file and `/etc/apt/sources.list.d/vscode.list`.
-* **Why it exists:** VSCode is not in the Debian archive. The key lets apt verify its packages.
-* **Side effects:** Network call and system file writes.
-
-### install_vscode
-
-* **Does:** Refreshes apt and installs the `code` package.
-* **Inputs:** The repository added by `prep_for_vscode_install`.
-* **Outputs:** VSCode installed.
-* **Why it exists:** Second half of the VSCode step.
-* **Side effects:** Network calls and system package changes.
-
-### configure_git
-
-* **Does:** Copies `configs/.gitignore_global` to the home directory if found, sets global Git
-  defaults, and prints the resulting config.
-* **Inputs:** `configs/.gitignore_global`.
-* **Outputs:** `~/.gitignore_global` and changes to `~/.gitconfig`.
-* **Why it exists:** Gives every new repository the same defaults.
-* **Side effects:** User file writes. Name and email are left for the user.
+* **Does:** Runs `dpkg-reconfigure console-setup`.
+* **Inputs:** Answers typed into the interactive dialog.
+* **Outputs:** A new console font and size.
+* **Why it exists:** Makes the text console readable on high resolution screens.
+* **Side effects:** System configuration change. Stops for user input.
 
 ## Known limitations or sharp edges
 
@@ -361,6 +359,7 @@ Step functions take no arguments.
 
 | Date       | Summary                                                                                                    |
 | :--------- | :--------------------------------------------------------------------------------------------------------- |
+| 2026-11-01 | Renamed steps to match fedora-tiling, merged the two VSCode functions, and ordered them by menu.           |
 | 2026-11-01 | Moved the menu engine and shared steps into common-functions.sh, identical in both tiling repos.           |
 | 2026-11-01 | Built the menu from one ordered list, matched steps 1 to 14 with fedora-tiling, and listed failed steps.   |
 | 2026-11-01 | Installed all desktop configs, fixed the menu numbering, package names, typos, and a 2 second GRUB delay.  |

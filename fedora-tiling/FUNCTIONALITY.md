@@ -49,9 +49,8 @@ Read the files in this order.
 **Depends on:** `common-functions.sh`, then `fedora-tiling-functions.sh`.
 
 It resolves its own directory with `dirname` and `realpath`. The `menu` array is the single place
-that sets step order, numbers, and labels. Option 2 runs the DNF tuning and the upgrade, and option
-3 runs the install and remove functions together. The file ends with `TODO(sgt7):` notes for
-Chrome and mise-en-place steps.
+that sets step order, numbers, and labels. Option 3 runs the install and remove functions
+together. The file ends with `TODO(sgt7):` notes for Chrome and mise-en-place steps.
 
 The script runs with `set -euo pipefail` and changes into the repository directory, so the data
 files are found wherever it is started from. Every function call goes through `run_step`, so a
@@ -130,7 +129,13 @@ finding fails the job.
 
 ## Function entries
 
-### run_step
+Step functions take no arguments. They are listed in menu order, after the helpers they use.
+
+### Shared functions in common-functions.sh
+
+These entries describe `common-functions.sh`, which is identical in both tiling repositories.
+
+#### run_step
 
 * **Does:** Runs one step function in a subshell with errexit on, then prints the exit code if the
   step failed.
@@ -141,7 +146,7 @@ finding fails the job.
 * **Side effects:** Adds the name of a failed step to `failed_steps`. A `cd` or variable change
   inside a step stays in its subshell.
 
-### run_entry
+#### run_entry
 
 * **Does:** Splits one menu entry into its function names and runs each through `run_step`.
 * **Inputs:** A space separated list of function names.
@@ -149,7 +154,7 @@ finding fails the job.
 * **Why it exists:** Lets one menu option run several functions, such as install and remove.
 * **Side effects:** Those of the steps it runs.
 
-### run_menu
+#### run_menu
 
 * **Does:** Prints a grouped, numbered menu built from the entries it is given, reads a choice, and
   runs that entry. The number after the last step runs every entry in order and then lists any
@@ -158,112 +163,48 @@ finding fails the job.
   or `function [function...]|Label`.
 * **Outputs:** The menu and the output of the chosen steps.
 * **Why it exists:** The numbers, the menu text, and Execute all come from one list, so they cannot
-  drift apart. The list keeps steps 1 to 14 identical to debian-tiling.
+  drift apart. Each repository's list keeps steps 1 to 14 the same as the other's.
 * **Side effects:** Reads from the terminal. Input such as `08` is read as decimal.
 
-The entries above and the shared steps `backup_configs`, `create_directories`, `install_font`,
-`copy_wallpapers`, `configure_vimrc`, `configure_git`, `configure_swappiness`, `apply_package_list`,
-and `install_config` live in `common-functions.sh`. The rest live in `fedora-tiling-functions.sh`.
-Step functions take no arguments.
+#### apply_package_list
 
-### backup_configs
-
-* **Does:** Copies `~/.bashrc`, `~/.profile`, `~/.bash_profile`, and `~/.bash_logout` into
-  `~/.config-backups`.
-* **Inputs:** Those files. Fedora normally has `~/.bash_profile` and Debian `~/.profile`.
-* **Outputs:** A backup directory, with a note for each file that is missing.
-* **Why it exists:** Keeps the stock dotfiles before later steps change the home directory.
-* **Side effects:** File writes. Safe to rerun, but it overwrites the earlier backups.
-
-### update_dnf
-
-* **Does:** Backs up `/etc/dnf/dnf.conf` to `dnf.original` once, then adds the parallel download
-  and fastest mirror settings if they are not already there.
-* **Inputs:** None.
-* **Outputs:** A changed dnf config.
-* **Why it exists:** Shortens every later dnf step.
-* **Side effects:** System file writes. Safe to rerun.
-
-### upgrade_fedora
-
-* **Does:** Runs `dnf upgrade`.
-* **Inputs:** None.
-* **Outputs:** Upgraded packages.
-* **Why it exists:** Later installs need a current system.
-* **Side effects:** Network calls and system package changes.
-
-### update_firmware
-
-* **Does:** Forces a refresh of LVFS firmware metadata, lists updates, and applies them.
-* **Inputs:** None.
-* **Outputs:** Updated device firmware where supported.
-* **Why it exists:** A stale metadata cache hides available firmware updates.
-* **Side effects:** Network calls and firmware writes. May ask for confirmation or a reboot.
-  `fwupdmgr` exits with 2 when there is nothing to do, so a non-zero exit there only prints a
-  message.
-
-### apply_package_list
-
-* **Does:** Runs a package command, such as `dnf install`, once per name in a list file.
+* **Does:** Runs a package command, such as `apt-get install` or
+  `dnf install`, once per name in a list file.
 * **Inputs:** The list file, then the command to run. Blank lines and `#` comments are skipped.
 * **Outputs:** A list of every package that failed, and a non-zero return if any did.
 * **Why it exists:** One bad name should not stop the rest, but it must not be lost in the scroll
-  either. The list is read on its own file descriptor so `dnf` cannot consume it from stdin.
+  either. The list is read on its own file descriptor so the package tool cannot consume
+  it from stdin.
 * **Side effects:** Whatever the command does.
 
-### install_packages and remove_packages
+#### install_config
 
-* **Does:** Installs each package in `package_install.txt`, then removes each package in
-  `package_remove.txt` and runs `dnf autoremove`, both through `apply_package_list`.
-* **Inputs:** The two list files. A missing list or a failed package fails the step.
-* **Outputs:** Installed and removed packages.
-* **Why it exists:** Keeps the package lists in data instead of code.
-* **Side effects:** Network calls and system package changes.
+* **Does:** Copies one file into place, creating its folder. If a different file is already there,
+  it is first copied to `~/.config-backups` under the same relative path with a timestamp.
+* **Inputs:** A source path in the repository and a target path in the home directory.
+* **Outputs:** The installed file, plus a backup when one was needed.
+* **Why it exists:** Rerunning the tiling step must not silently destroy a hand edited config.
+* **Side effects:** File writes.
 
-### enable_flathub
+#### backup_configs
 
-* **Does:** Installs Flatpak and adds the Flathub remote if missing.
-* **Inputs:** None.
-* **Outputs:** A system wide Flatpak remote.
-* **Why it exists:** Fedora does not enable the full Flathub remote by default.
-* **Side effects:** System package and Flatpak configuration changes.
+* **Does:** Copies `~/.bashrc`, `~/.profile`, `~/.bash_profile`, and `~/.bash_logout` into
+  `~/.config-backups`.
+* **Inputs:** Those files. Debian normally has `~/.profile` and Fedora `~/.bash_profile`.
+* **Outputs:** A backup directory, with a note for each file that is missing.
+* **Why it exists:** Keeps the stock dotfiles in case `stow` or a later step replaces them.
+* **Side effects:** File writes. Safe to rerun, but it overwrites the earlier backups.
 
-### install_development_tools
-
-* **Does:** Installs the `development-tools` package group.
-* **Inputs:** None.
-* **Outputs:** Compilers, `make`, and related tools.
-* **Why it exists:** Needed to build software and kernel modules.
-* **Side effects:** System package changes.
-
-### enable_rpmfusion
-
-* **Does:** Installs the RPM Fusion free and nonfree release packages for the running Fedora
-  version, skipping any that are already installed.
-* **Inputs:** The Fedora version from `rpm -E %fedora`.
-* **Outputs:** Two enabled repositories with their signing keys and `gpgcheck` on.
-* **Why it exists:** Full `ffmpeg` and the restricted GStreamer plugins are only in RPM Fusion.
-  It is called by the codec and VLC steps rather than having its own menu option.
-* **Side effects:** Network calls and new repository files under `/etc/yum.repos.d`.
-
-### install_codecs
-
-* **Does:** Enables RPM Fusion, then swaps `ffmpeg-free` for the full `ffmpeg` build.
-* **Inputs:** None.
-* **Outputs:** Full ffmpeg codec support.
-* **Why it exists:** `ffmpeg-free` leaves out patent limited formats.
-* **Side effects:** System package changes. Safe to rerun.
-
-### create_directories
+#### create_directories
 
 * **Does:** Creates `~/.config`, `~/dotfiles`, `~/.local/share/themes`, `~/.local/share/fonts`,
   `~/.local/share/icons`, `~/software`, `~/scripts`, and `~/Pictures/wallpapers`.
 * **Inputs:** None.
 * **Outputs:** New directories.
-* **Why it exists:** The font and wallpaper steps copy into these paths.
+* **Why it exists:** The font, wallpaper, and tiling steps copy into these paths.
 * **Side effects:** Directory creation.
 
-### install_font
+#### install_font
 
 * **Does:** Downloads the DroidSansMono Nerd Font v3.4.0 zip into `~/fonttmp`, checks its
   SHA-256, copies the `.otf` files into `~/.local/share/fonts`, rebuilds the font cache, and removes
@@ -274,25 +215,70 @@ Step functions take no arguments.
 * **Side effects:** Network call and file writes. It works with full paths and never changes the
   working directory.
 
-### copy_wallpapers
+#### copy_wallpapers
 
 * **Does:** Copies every file in `wallpapers/` to `~/Pictures/wallpapers/`, or fails the step if
   the folder is missing.
 * **Inputs:** `wallpapers/`.
 * **Outputs:** Image files.
-* **Why it exists:** Makes the wallpapers available to the Sway config.
+* **Why it exists:** The window manager config sets the wallpaper from this folder.
 * **Side effects:** File writes.
 
-### install_config
+#### configure_vimrc
 
-* **Does:** Copies one file into place, creating its folder. If a different file is already there,
-  it is first copied to `~/.config-backups` under the same relative path with a timestamp.
-* **Inputs:** A source path in the repository and a target path in the home directory.
-* **Outputs:** The installed file, plus a backup when one was needed.
-* **Why it exists:** Rerunning the tiling step must not silently destroy a hand edited config.
-* **Side effects:** File writes.
+* **Does:** Writes a `~/.vimrc` that silences the bell and turns on syntax, line numbers, and
+  mouse support.
+* **Inputs:** None.
+* **Outputs:** `~/.vimrc`.
+* **Why it exists:** Gives Vim usable defaults.
+* **Side effects:** Overwrites any existing `~/.vimrc`.
 
-### customize_tiling
+#### configure_git
+
+* **Does:** Copies `configs/.gitignore_global` to the home directory if found, sets global Git
+  defaults, and prints the resulting config.
+* **Inputs:** `configs/.gitignore_global`.
+* **Outputs:** `~/.gitignore_global` and changes to `~/.gitconfig`.
+* **Why it exists:** Gives every new repository the same defaults.
+* **Side effects:** User file writes. Name and email are left for the user.
+
+#### configure_swappiness
+
+* **Does:** Writes `vm.swappiness = 10` to `/etc/sysctl.d/swappiness.conf` and applies it.
+* **Inputs:** None.
+* **Outputs:** A sysctl file and the before and after values on screen.
+* **Why it exists:** Keeps the desktop in RAM longer before swapping.
+* **Side effects:** System file write. Persists across reboots.
+
+### Fedora functions in fedora-tiling-functions.sh
+
+#### configure_dnf
+
+* **Does:** Backs up `/etc/dnf/dnf.conf` to `dnf.original` once, then adds the parallel download
+  and fastest mirror settings if they are not already there.
+* **Inputs:** None.
+* **Outputs:** A changed dnf config.
+* **Why it exists:** Shortens every later dnf step. `update_system` runs it first.
+* **Side effects:** System file writes. Safe to rerun.
+
+#### update_system
+
+* **Does:** Runs `configure_dnf`, then `dnf upgrade`.
+* **Inputs:** None.
+* **Outputs:** A faster dnf config and upgraded packages.
+* **Why it exists:** Later installs need a current system.
+* **Side effects:** System file writes, network calls, and system package changes.
+
+#### install_packages and remove_packages
+
+* **Does:** Installs each package in `package_install.txt`, then removes each package in
+  `package_remove.txt` and runs `dnf autoremove`, both through `apply_package_list`.
+* **Inputs:** The two list files. A missing list or a failed package fails the step.
+* **Outputs:** Installed and removed packages.
+* **Why it exists:** Keeps the package lists in data instead of code.
+* **Side effects:** Network calls and system package changes.
+
+#### customize_tiling
 
 * **Does:** Installs the Sway, foot, and rofi configs, the rofi theme, and the two volume helpers
   through `install_config`.
@@ -302,16 +288,26 @@ Step functions take no arguments.
 * **Side effects:** File writes, with backups of changed files. There is no waybar config yet, so
   Sway keeps the bar from Fedora's own `/usr/share/sway/config.d` files.
 
-### configure_vimrc
+#### enable_rpmfusion
 
-* **Does:** Writes a `~/.vimrc` that silences the bell and turns on syntax, line numbers, and
-  mouse support.
+* **Does:** Installs the RPM Fusion free and nonfree release packages for the running Fedora
+  version, skipping any that are already installed.
+* **Inputs:** The Fedora version from `rpm -E %fedora`.
+* **Outputs:** Two enabled repositories with their signing keys and `gpgcheck` on.
+* **Why it exists:** Full `ffmpeg` and the restricted GStreamer plugins are only in RPM Fusion.
+  It is called by the codec and VLC steps rather than having its own menu option.
+* **Side effects:** Network calls and new repository files under `/etc/yum.repos.d`.
+
+#### install_codecs
+
+* **Does:** Enables RPM Fusion, then swaps `ffmpeg-free` for the full `ffmpeg` build.
 * **Inputs:** None.
-* **Outputs:** `~/.vimrc`.
-* **Why it exists:** Gives Vim usable defaults.
-* **Side effects:** Overwrites any existing `~/.vimrc`.
+* **Outputs:** Full ffmpeg codec support.
+* **Why it exists:** `ffmpeg-free` leaves out patent limited formats. It has no menu option of its
+  own, because `install_vlc` calls it.
+* **Side effects:** System package changes. Safe to rerun.
 
-### install_vlc_restricted_extras
+#### install_vlc
 
 * **Does:** Runs `install_codecs`, then installs VLC with the RPM Fusion `vlc-plugins-freeworld`
   codecs and the GStreamer plugin sets, including ugly, bad freeworld, and libav.
@@ -320,7 +316,7 @@ Step functions take no arguments.
 * **Why it exists:** Adds a media player and full codec support.
 * **Side effects:** System package changes and RPM Fusion repositories.
 
-### install_vscode
+#### install_vscode
 
 * **Does:** Imports the Microsoft signing key, writes `/etc/yum.repos.d/vscode.repo` with
   `gpgcheck=1`, refreshes metadata with `dnf makecache`, and installs `code`.
@@ -329,25 +325,7 @@ Step functions take no arguments.
 * **Why it exists:** VSCode is not in the Fedora repositories.
 * **Side effects:** Network calls, a repository file, and package changes.
 
-### install_obs
-
-* **Does:** Calls `enable_flathub`, installs OBS Studio from Flathub, and creates its config
-  folder.
-* **Inputs:** None.
-* **Outputs:** OBS Studio installed as a Flatpak.
-* **Why it exists:** The Flathub build is the one maintained by the OBS project.
-* **Side effects:** Network calls and a system wide Flatpak install.
-
-### configure_git
-
-* **Does:** Copies `configs/.gitignore_global` to the home directory if found, sets global Git
-  defaults, and prints the resulting config.
-* **Inputs:** `configs/.gitignore_global`.
-* **Outputs:** `~/.gitignore_global` and changes to `~/.gitconfig`.
-* **Why it exists:** Gives every new repository the same defaults.
-* **Side effects:** User file writes. Name and email are left for the user.
-
-### install_firewalld_enable
+#### configure_firewall
 
 * **Does:** Installs firewalld and its GUI, starts it, strips every service and port from the
   `public` zone except `dhcpv6-client`, makes `public` the default zone, and prints the result.
@@ -360,15 +338,7 @@ Step functions take no arguments.
 * **Side effects:** Firewall configuration changes. Local network discovery over mDNS stops
   working. A NetworkManager connection with its own zone set keeps that zone.
 
-### configure_swappiness
-
-* **Does:** Writes `vm.swappiness = 10` to `/etc/sysctl.d/swappiness.conf` and applies it.
-* **Inputs:** None.
-* **Outputs:** A sysctl file and the before and after values on screen.
-* **Why it exists:** Keeps the desktop in RAM longer before swapping.
-* **Side effects:** System file write. Persists across reboots.
-
-### speed_up_boot_time
+#### configure_boot_time
 
 * **Does:** Backs up `/etc/default/grub`, sets `GRUB_TIMEOUT` to `2` whatever its old value, and
   regenerates `/boot/grub2/grub.cfg`.
@@ -377,7 +347,42 @@ Step functions take no arguments.
 * **Why it exists:** Speeds up boot while leaving time to pick a kernel.
 * **Side effects:** Boot configuration change. The backup is only made once.
 
-### install_docker
+#### update_firmware
+
+* **Does:** Forces a refresh of LVFS firmware metadata, lists updates, and applies them.
+* **Inputs:** None.
+* **Outputs:** Updated device firmware where supported.
+* **Why it exists:** A stale metadata cache hides available firmware updates.
+* **Side effects:** Network calls and firmware writes. May ask for confirmation or a reboot.
+  `fwupdmgr` exits with 2 when there is nothing to do, so a non-zero exit there only prints a
+  message.
+
+#### enable_flathub
+
+* **Does:** Installs Flatpak and adds the Flathub remote if missing.
+* **Inputs:** None.
+* **Outputs:** A system wide Flatpak remote.
+* **Why it exists:** Fedora does not enable the full Flathub remote by default.
+* **Side effects:** System package and Flatpak configuration changes.
+
+#### install_development_tools
+
+* **Does:** Installs the `development-tools` package group.
+* **Inputs:** None.
+* **Outputs:** Compilers, `make`, and related tools.
+* **Why it exists:** Needed to build software and kernel modules.
+* **Side effects:** System package changes.
+
+#### install_obs
+
+* **Does:** Calls `enable_flathub`, installs OBS Studio from Flathub, and creates its config
+  folder.
+* **Inputs:** None.
+* **Outputs:** OBS Studio installed as a Flatpak.
+* **Why it exists:** The Flathub build is the one maintained by the OBS project.
+* **Side effects:** Network calls and a system wide Flatpak install.
+
+#### install_docker
 
 * **Does:** Removes any distro Docker packages, adds Docker's official repository with the dnf5
   `config-manager addrepo` command, installs Docker CE
@@ -388,7 +393,7 @@ Step functions take no arguments.
 * **Side effects:** Package, repository, service, and group changes. Membership in `docker` is
   root equivalent on the host. A reboot is needed for the group to apply.
 
-### install_virtualbox
+#### install_virtualbox
 
 * **Does:** Calls `install_development_tools`, installs kernel headers and DKMS, imports Oracle's
   signing key, writes `/etc/yum.repos.d/virtualbox.repo` with an HTTPS `baseurl`, installs
@@ -398,7 +403,7 @@ Step functions take no arguments.
 * **Why it exists:** VirtualBox needs kernel modules built for the running kernel.
 * **Side effects:** Package, repository, and group changes.
 
-### install_brave_browsers
+#### install_brave
 
 * **Does:** Adds the Brave repository and installs the Brave browser.
 * **Inputs:** None.
@@ -413,7 +418,7 @@ Step functions take no arguments.
   are from the old menu. They are now steps 7 (tiling), 10 (VLC), 9 (Git), and 19 (Docker).
 * **Failures stop a step, not the run.** In option 22 a failed step prints an error and the next
   step still runs. The failed steps are listed again at the end.
-* **dnf5 only.** `install_docker` and `install_brave_browsers` use the dnf5 `addrepo` syntax, which
+* **dnf5 only.** `install_docker` and `install_brave` use the dnf5 `addrepo` syntax, which
   matches the Fedora 41 or newer requirement in the README.
 * **Unused helpers.** No key binding calls the volume scripts.
 
@@ -421,6 +426,7 @@ Step functions take no arguments.
 
 | Date       | Summary                                                                                                               |
 | :--------- | :-------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-01 | Renamed steps to match debian-tiling, such as configure_firewall and configure_boot_time, and ordered them by menu.   |
 | 2026-11-01 | Moved the menu engine and shared steps into common-functions.sh, identical in both tiling repos.                      |
 | 2026-11-01 | Built the menu from one ordered list, matched steps 1 to 14 with debian-tiling, merged codecs into VLC, added Brave.  |
 | 2026-11-01 | Set GRUB to 2 seconds from any old value and added the packages the default Sway wallpaper needs.                     |
