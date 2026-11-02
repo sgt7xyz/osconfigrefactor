@@ -1,0 +1,36 @@
+# ---------------------------------------------------------------
+# File:     .editorconfig
+# Purpose:  Keep indentation, line endings, and whitespace consistent across editors
+# Project:  macos-setup-sgt7
+# Author:   sgt7 LLC
+# ---------------------------------------------------------------
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# Existing setup scripts use 4 spaces, so new edits keep matching them.
+[*.sh]
+indent_size = 4
+
+# PowerShell scripts use 4 spaces, matching the PowerShell style guide.
+[*.ps1]
+indent_size = 4
+
+# Python formatting is owned by ruff format, which uses 4 spaces.
+[*.py]
+indent_size = 4
+
+# NOTE: Makefiles require real tabs.
+[Makefile]
+indent_style = tab
+
+# NOTE: Go uses tabs by convention and gofmt enforces it.
+[*.go]
+indent_style = tab

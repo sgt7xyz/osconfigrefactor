@@ -1,212 +1,194 @@
-# Windows 11 Post-Install Setup Script
+# Windows 11 Setup
 
-![Win Logo](images/winlogo.png)
+Menu-driven PowerShell scripts that automate the post-install setup, debloat, and upkeep of a
+Windows 11 Pro workstation.
 
-[![Creative Commons License](https://i.creativecommons.org/l/by-nc/4.0/88x31.png)](http://creativecommons.org/licenses/by-nc/4.0/)
+[![License: PolyForm Small Business 1.0.0](https://img.shields.io/badge/license-PolyForm_Small_Business-blue)](https://polyformproject.org/licenses/small-business/1.0.0)
 
-This repository contains scripts to automate the setup and configuration of a new Windows 11 environment. The setup process is streamlined through two main PowerShell scripts: `win11Setup.ps1` and `win11Functions.ps1`.
+![Windows logo](images/winlogo.png)
 
 ## Overview
 
-- `win11Setup.ps1`: This script provides a user-friendly menu to execute various setup tasks such as installing winget, updating Windows, renaming the PC, installing applications and tools, managing packages, and configuring development tools.
-- `win11Functions.ps1`: Contains all the functions called by `win11Setup.ps1`, modularizing the setup process and making the codebase easier to maintain and update.
+This repository turns a fresh Windows 11 install into a developer friendly, privacy conscious
+machine. It renames the PC, patches Windows, installs and removes winget packages, installs Chrome,
+the Fira Code Nerd Font, Windows Terminal with Oh My Posh and mise, wallpapers, and Git defaults.
+An opt-in step removes bloatware and applies privacy and performance tweaks, and another schedules
+maintenance tasks that reapply those tweaks after Windows updates. Fork it and edit the list files
+to suit your machine.
 
-## Getting Started
+## Architecture
 
-1. **Prepare Your Environment**: Ensure that PowerShell is set to allow scripts to run by executing `Set-ExecutionPolicy RemoteSigned` from an elevated PowerShell prompt.
+`win11-setup.ps1` checks for administrator rights, dot-sources `win11-functions.ps1`, and shows a
+numbered menu. Each option calls one function. `scripts/win11-maintenance.ps1` is a standalone
+copy of the tweak functions that Task Scheduler runs as SYSTEM.
 
-  ```powershell
-  PS C:\Users\%username%\code\windows-setup-sgt7> Get-ExecutionPolicy
-  Restricted
-  PS C:\Users\%username%\code\windows-setup-sgt7> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-  Execution Policy Change
-  The execution policy helps protect you from scripts that you do not trust. Changing the execution policy might expose you to the security risks described in the
-  about_Execution_Policies help topic at https:/go.microsoft.com/fwlink/?LinkID=135170. Do you want to change the execution policy?
-  [Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "N"): A
-  PS C:\Users\%username%\code\windows-setup-sgt7> Get-ExecutionPolicy
-  RemoteSigned
-  PS C:\Users\%username%\code\windows-setup-sgt7>
-  ```
+```text
+win11-setup.ps1 --> win11-functions.ps1 --> winget, PSWindowsUpdate, registry, services, git
+                              |
+                              +--> winget_install.txt, winget_uninstall.txt, debloat_list.txt,
+                              |    configs/, fonts/, wallpapers/
+                              +--> scripts/win11-maintenance.ps1 --> Task Scheduler (weekly, monthly)
+```
 
-2. **Download the Scripts**: Clone this repository or download the scripts directly into your local machine.
-3. **Running `win11Setup.ps1`**: Navigate to the directory containing the scripts and run `.\win11Setup.ps1` from an elevated PowerShell prompt. Follow the on-screen prompts to select the setup tasks you wish to execute.
+## Prerequisites
 
-## Features
+| Requirement                        | Version         |
+| :--------------------------------- | :-------------- |
+| Windows 11 Pro                     | Current release |
+| Windows PowerShell or PowerShell 7 | 5.1 or newer    |
+| An administrator account           | Not applicable  |
+| Internet access                    | Not applicable  |
 
-The `win11Setup.ps1` script offers the following options:
+## Quick start
 
-### System Configuration
+1. Allow local scripts to run for your user. Run this once in PowerShell and answer **Y**.
 
-1. **Rename Windows PC** (`Rename-WindowsPC`)
-   - Changes the computer's name.
-   - Prompts user for the new computer name interactively.
-   - Requires system restart for changes to take effect.
+   ```powershell
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+   ```
 
-2. **Install Windows Package Manager (winget)** (`Install-Winget`)
-   - Installs the Windows Package Manager if not already present.
-   - Checks if winget is already installed and skips installation if found.
-   - Requires administrator privileges.
-   - Installs via the Microsoft Desktop App Installer package.
+1. Clone this repository, or download and extract it.
 
-3. **Update and Patch Windows** (`Update-Patch-Windows`)
-   - Applies the latest Windows updates and patches using the PSWindowsUpdate module.
-   - Installs the NuGet package provider if not present.
-   - Configures Microsoft Update as a service manager.
-   - Suppresses automatic reboot but recommends manual restart after completion.
-   - Logs all updates to a timestamped file at `C:\<ComputerName>_<Date>_MSUpdates.log`.
+   ```powershell
+   git clone https://github.com/sgt7xyz/windows-setup-sgt7.git
+   cd windows-setup-sgt7
+   ```
 
-### Package Management
+1. Open PowerShell with **Run as administrator**, change to the repository directory, and run the
+   menu.
 
-4. **Install winget Packages** (`Install-WingetPackages`)
-   - Installs applications using the Windows Package Manager from a predefined list in `winget_install.txt`.
-   - Checks if each package is already installed before attempting installation.
-   - Skips packages marked with `#` (comments) or empty lines.
-   - Generates detailed logs in `logs/winget_install.log` with timestamps.
-   - Reports success/failure/skip status for each package installation attempt.
-   - Supports silent installation for all packages.
+   ```powershell
+   .\win11-setup.ps1
+   ```
 
-5. **Uninstall winget Packages** (`Uninstall-WingetPackages`)
-   - Removes applications using the Windows Package Manager from a predefined list in `winget_uninstall.txt`.
-   - Checks if each package is installed before attempting uninstallation.
-   - Skips packages marked with `#` (comments) or empty lines.
-   - Generates detailed logs in `logs/winget_uninstall.log` with timestamps.
-   - Reports success/failure/skip status for each package uninstallation attempt.
-   - Supports silent uninstallation for all packages.
+## Configuration
 
-### Applications & Tools
+This project reads no environment variables. Behavior is controlled by the files below.
 
-6. **Install Google Chrome** (`Install-Chrome`)
-   - Downloads and installs the Google Chrome web browser.
-   - Performs silent installation using `/silent /install` parameters.
-   - Automatically cleans up the installer file after installation.
+| File or folder                   | Description                                     | Default                         |
+| :------------------------------- | :---------------------------------------------- | :------------------------------ |
+| `winget_install.txt`             | winget package IDs to install, `#` for comments | Browsers, CLI, editors, DevOps  |
+| `winget_uninstall.txt`           | winget package IDs to uninstall                 | Same categories as install      |
+| `debloat_list.txt`               | Appx package names to remove, wildcards allowed | Xbox, Widgets, consumer apps    |
+| `configs/Terminal/settings.json` | Windows Terminal settings                       | Fira Code Nerd Font, Catppuccin |
+| `configs/OhMyPosh/`              | Oh My Posh prompt theme                         | Catppuccin Macchiato            |
+| `configs/Git/.gitignore_global`  | Global Git ignore file copied to your profile   | Common OS and editor files      |
+| `fonts/FiraCode/`                | Offline copy of the Fira Code Nerd Font         | 20 font files                   |
+| `wallpapers/`                    | Wallpapers copied to `Pictures\Wallpapers`      | `01.png` set as the desktop     |
 
-7. **Install Fonts** (`Install-Fonts`)
-   - Adds custom fonts (`.ttf` and `.otf` files) to your system from the `fonts/` directory.
-   - Copies fonts to the Windows System Fonts directory (`C:\Windows\Fonts`) and registers each one (registry entry, GDI notification) so apps can find it by family name immediately — not just a file copy.
-   - Skips installation if no `fonts/` directory is found.
-   - Reports success/failure for each font file.
+## Usage
 
-8. **Install Windows Terminal and Oh My Posh** (`Install-OhMyPosh`)
-   - Installs Windows Terminal for a modern terminal experience.
-   - Installs Oh My Posh for customizable command-line prompts and themes.
-   - Checks whether the Fira Code Nerd Font is already registered with Windows; if not, installs it via `oh-my-posh font install`, falling back to the copy bundled in `fonts/FiraCode/` if that's unavailable (no internet, etc.) — either way, the font is registered (not just copied) so Windows Terminal can find it, and no reboot is required.
-   - Applies Windows Terminal settings configuration (colors, opacity, font "FiraCode Nerd Font", keybindings).
-   - Configures PowerShell profiles with **mise** initialization for tool version management.
-   - Mise allows you to install and manage multiple versions of tools like Terraform, Node.js, Python, and more.
-   - Automatically adds mise-managed tools to the `$PATH` so they're available in PowerShell immediately after installation.
-   - Copies the `catppuccin_macchiato` Oh My Posh theme to the user's profile.
-   - **Note:** This step replaces the separate "Configure Windows Terminal" option for a streamlined setup experience.
-   - All installations are performed silently via winget.
+Run `.\win11-setup.ps1` as administrator and pick a step by number. Option **13** runs steps 1 to 4
+and 6 to 10 in order. It skips steps 5, 11, and 12, which you run on their own.
 
-9. **Install Wallpapers** (`Install-Wallpapers`)
-   - Copies wallpaper files from the `wallpapers/` directory to the user's Pictures folder.
-   - Sets the first wallpaper (01.png) as the default desktop background.
-   - Creates the Wallpapers directory if it doesn't exist.
+| Option | Group                    | Step                                                 |
+| -----: | :----------------------- | :--------------------------------------------------- |
+|      1 | System configuration     | Rename the PC                                        |
+|      2 | System configuration     | Install winget                                       |
+|      3 | System configuration     | Update and patch Windows                             |
+|      4 | Package management       | Install winget packages                              |
+|      5 | Package management       | Uninstall winget packages                            |
+|      6 | Applications and tools   | Install Google Chrome                                |
+|      7 | Applications and tools   | Install fonts                                        |
+|      8 | Applications and tools   | Install Windows Terminal, Oh My Posh, and mise setup |
+|      9 | Applications and tools   | Install wallpapers                                   |
+|     10 | Applications and tools   | Configure Git                                        |
+|     11 | Cleanup and optimization | Debloat and optimize Windows (asks first)            |
+|     12 | Automation               | Schedule weekly and monthly maintenance tasks        |
+|     13 | All                      | Execute all setup steps (asks first)                 |
+|      0 | Exit                     | Exit                                                 |
 
-10. **Configure Git** (`Install-Git-Config`)
-    - Configures Git with essential global settings:
-      - Sets default branch to `main`.
-      - Enables colored output for better readability.
-      - Sets VS Code as the default editor.
-      - Configures pull strategy to merge (not rebase).
-      - Copies `.gitignore_global` from `configs/` directory if available.
-      - Applies global git excludes file configuration.
-    - Displays all configured git settings upon completion.
-    - Recommends manual configuration of username and email after setup.
+Steps 4, 5, and 11 write logs to the `logs/` folder in the repository. Step 3 writes its update log
+to `C:\<ComputerName>_<date>_MSUpdates.log`.
 
-### Tool Version Management With mise
+### Debloat and optimize
 
-The setup script automatically configures **mise** integration in your PowerShell profiles. mise is a polyglot runtime manager that simplifies version management for multiple languages and tools.
+Step 11 asks for confirmation, then removes the apps in `debloat_list.txt` for every user and
+de-provisions them so they do not return for new profiles. It also removes News, Weather, consumer
+Teams, the Gaming app, and Copilot, uninstalls OneDrive and blocks it by policy, lowers telemetry,
+hides Start and lock screen suggestions, disables Recall and Game DVR, turns on file extensions,
+hidden files, long paths, and Developer Mode, disables ten optional services, and picks a power
+plan based on whether the machine has a battery.
 
-**What Is mise?**
+It never touches Windows Defender, Windows Update, the firewall, WMI, the event log, or the print
+spooler.
 
-- A tool version manager that supports Terraform, Node.js, Python, Ruby, Go, Rust, and many other tools.
-- Allows you to install and manage multiple versions of the same tool without conflict.
-- Configured in `.mise.toml` files per project for version pinning and consistency.
-- Automatically activates the correct tool version when you enter a directory with a `.mise.toml` configuration.
+### Scheduled maintenance
 
-**Integration With Setup:**
+Step 12 copies `scripts/win11-maintenance.ps1` to `C:\windows-setup` and registers two tasks under
+`\windows-setup\` in Task Scheduler. Both run as SYSTEM.
 
-- The setup script adds the mise bin path (`$env:USERPROFILE\.mise\bin`) to PowerShell's `$PATH`.
-- Initializes mise activation hooks so tool shims are available in PowerShell sessions.
-- After setup, all tools installed via mise (e.g., `mise install terraform`) will be immediately accessible in PowerShell.
-- No need to manually add paths or restart shells — mise integration is automatic.
+* **Weekly**, Sunday at 2:00, reapplies the privacy tweaks, service settings, and context menu
+  changes.
+* **Monthly**, every fourth Sunday at 3:00, does the same and also reapplies the OneDrive block.
 
-### Script Improvements
+Logs go to `C:\windows-setup\logs`. Remove the tasks in Task Scheduler if you no longer want them.
 
-- **Consolidated Terminal Setup**: The "Install Windows Terminal and Oh My Posh" step now includes terminal configuration, eliminating the need for a separate step and ensuring fonts are properly installed before applying settings.
-- **Robust Font Installation**: `Install-SystemFont` and `Test-FontInstalled` properly register fonts (registry entry + immediate refresh, not just a file copy), and `Install-OhMyPosh` checks registration before applying terminal settings to prevent "Unable to find the following fonts" errors.
-- **Intelligent Font Management**: Supports both custom fonts (via option 7) and nerd fonts for terminal themes (via option 8).
+## Project structure
 
-### System Cleanup & Optimization
+```text
+.
+├── win11-setup.ps1          # Entry point and menu
+├── win11-functions.ps1      # One function per setup step, plus helpers
+├── scripts/
+│   └── win11-maintenance.ps1  # Standalone tweaks run by Task Scheduler
+├── winget_install.txt       # Packages to install
+├── winget_uninstall.txt     # Packages to uninstall
+├── debloat_list.txt         # Built-in apps to remove
+├── configs/                 # Terminal, Oh My Posh, and Git configs
+├── PSScriptAnalyzerSettings.psd1  # Lint rules and 5.1 compatibility checks
+├── fonts/FiraCode/          # Offline Nerd Font files
+├── wallpapers/              # Desktop wallpapers
+├── images/                  # README images
+├── FUNCTIONALITY.md         # How the code works
+└── LICENSE
+```
 
-11. **Debloat & Optimize Windows** (`Invoke-DebloatAndOptimize`)
-    - Not included in "Execute all steps" — this is an explicit, opt-in step since it changes default OS behavior more than the other options do.
+## Security considerations
 
-### Automation
+* Review every script before running it. The menu needs administrator rights and changes HKLM,
+  services, scheduled tasks, and installed apps.
+* The execution policy change applies only to your user and only allows unsigned local scripts.
+* Step 11 lowers telemetry and disables tracking services. It leaves every security service alone.
+* Step 12 registers tasks that run as SYSTEM. Keep `C:\windows-setup` writable only by
+  administrators, because anyone who can edit the copied script can run code as SYSTEM.
+* No credentials are stored. Set your Git name and email by hand after step 10.
 
-12. **Schedule Automated Maintenance Tasks** (`Schedule-MaintenanceTask`)
-    - Sets up two scheduled tasks that run automatically to maintain Windows 11 cleanliness after Windows updates.
-    - **Weekly task** (Sunday 2:00 AM): Re-applies privacy/performance registry tweaks, disables telemetry services, and optimizes context menu.
-    - **Monthly task** (Sunday 3:00 AM, every 4 weeks): Includes all weekly tasks plus verifies OneDrive policy block.
-    - Copies the `scripts/win11-maintenance.ps1` script to a secure location (`C:\ProgramFiles\WindowsSetup`).
-    - Registers both tasks to run as `NT AUTHORITY\SYSTEM` with highest privilege level.
-    - Creates a `logs/` directory for timestamped maintenance logs.
-    - Displays configuration details including task locations and log file path.
-    - Tasks can be managed or removed via Windows Task Scheduler if needed.
-    - This ensures that Windows updates do not undo your privacy and debloating customizations.
-    - Prompts for confirmation before making any changes, and clearly states up front what it will and will not touch.
-    - Removes built-in Windows bloatware (`Remove-Bloatware`):
-      - Deletes the packages listed in `debloat_list.txt` (Xbox app/overlays, consumer Teams/Chat, Widgets, Solitaire, Bing news/weather/finance/sports tiles, 3D Viewer, Mixed Reality Portal, Paint 3D, Skype, People, Feedback Hub, Get Help, Tips, Clipchamp, Family Safety, Office Hub, Cortana app).
-      - Removes them both for existing user profiles (`Get-AppxPackage -AllUsers`) and de-provisions them (`Get-AppxProvisionedPackage`) so they don't reappear for new profiles or after a Windows feature update.
-      - Uninstalls OneDrive via its own uninstaller (it's a regular Win32 install, not an Appx package) — synced files already on disk are left in place for you to review.
-      - Makes OneDrive inert even if a Windows feature update reinstalls it: applies the `DisableFileSyncNGSC` policy so it won't run or sync, strips the reinstall trigger from the Default user profile so new accounts don't get it at first logon, removes its scheduled tasks, and unpins it from the Explorer sidebar. Deliberately leaves `OneDriveSetup.exe` alone in System32/SysWOW64 — it's a TrustedInstaller-owned protected file, and fighting SFC/updates over it can cause servicing errors.
-      - Sets the `DisableWindowsConsumerFeatures` policy so Windows stops re-suggesting/reinstalling consumer apps.
-      - Logs every action to `logs/debloat.log`.
-      - Fully customizable: edit `debloat_list.txt` (one Appx package name per line, wildcards supported, `#` to skip) to change what gets removed.
-    - Applies privacy/performance tweaks (`Optimize-WindowsPrivacyPerformance`):
-      - Sets telemetry to the minimum level the Windows edition allows.
-      - Disables Start menu web search/suggestions, Start/lock-screen "ad" content, and hides the Widgets/Chat taskbar icons.
-      - Disables Recall (Copilot+ PCs) via policy, and removes the optional feature if present.
-      - Disables Game DVR/background game recording.
-      - Enables developer-friendly settings: show file extensions, show hidden files, `LongPathsEnabled`, Developer Mode, Storage Sense.
-    - Disables a small set of non-essential services (`Disable-UnneededServices`): `DiagTrack`, `dmwappushservice`, `RetailDemo`, `Fax`, `wisvc` (Windows Insider Service).
-      - Deliberately does **not** touch Windows Defender, Windows Update, the firewall, WMI, Event Log, or Print Spooler.
-    - Sets an appropriate power plan (`Set-PowerPlan`): detects battery presence at runtime — Balanced with hibernation on for laptops, High Performance with hibernation off for desktops.
+## Testing
 
-### Execute All
+There are no automated tests. Lint the scripts with PSScriptAnalyzer and the settings file in this
+repository, which also checks that every script stays compatible with Windows PowerShell 5.1.
 
-13. **Execute All** (`Invoke-All-Install-Tasks`)
-    - Runs all setup tasks in the following sequence (does **not** include Debloat & Optimize or Schedule Maintenance — run those separately if you want them):
-      1. Rename Windows PC
-      2. Install winget
-      3. Update and Patch Windows
-      4. Install winget packages
-      5. Install Google Chrome
-      6. Install custom fonts
-      7. Install Windows Terminal, Oh My Posh, configure settings, and mise integration
-      8. Install wallpapers
-      9. Configure Git
+```powershell
+Install-Module PSScriptAnalyzer -Scope CurrentUser
+Invoke-ScriptAnalyzer -Path . -Recurse -Settings .\PSScriptAnalyzerSettings.psd1
+```
 
-### Exit
+The same command works from PowerShell 7 on macOS or Linux, with `./` in place of `.\`.
 
-0. **Exit**: Closes the script.
+Test full runs in a throwaway Windows 11 VM before using them on a real machine.
 
-## Configuration Files
+## Troubleshooting
 
-- `winget_install.txt`: A list of applications to install via winget, grouped into commented categories (Browsers, CLI utilities, Editors/IDEs, etc.). Edit this file to customize which packages are installed during the "Install winget Packages" operation.
-- `winget_uninstall.txt`: A list of applications to uninstall via winget, using the same categorized format as `winget_install.txt`. Edit this file to customize which packages are removed during the "Uninstall winget Packages" operation.
-- `debloat_list.txt`: A list of built-in Windows apps to remove during "Debloat & Optimize Windows", grouped into commented categories (Xbox/gaming, Consumer chat/social, etc.). Edit this file to customize which apps are removed — comment out (`#`) or delete any line you want to keep.
-- `configs/Terminal/settings.json`: Configuration file for Windows Terminal settings (colors, font, opacity, keybindings).
+| Problem                                           | Fix                                                         |
+| :------------------------------------------------ | :---------------------------------------------------------- |
+| `running scripts is disabled on this system`      | Run the `Set-ExecutionPolicy` command from the quick start. |
+| The script says it needs administrator privileges | Reopen PowerShell with **Run as administrator**.            |
+| Windows Terminal says it cannot find the font     | Run step 7, then step 8 again.                              |
+| The rename does not show up                       | Restart Windows.                                            |
+| A package was not installed                       | Check `logs\winget_install.log` for the winget output.      |
 
-## Customization
+## Roadmap
 
-You can customize the `win11Functions.ps1` script to modify existing tasks or add new ones according to your preferences. Each function in the script corresponds to a task in the `win11Setup.ps1` menu, making it easy to tailor the setup process to your needs. Additionally, edit the `winget_install.txt` and `winget_uninstall.txt` files to customize the packages that are installed or uninstalled.
-
-## Contributing
-
-Contributions to improve the scripts or add new functionality are welcome. Please feel free to fork the repository, make your changes, and submit a pull request.
+* Install winget itself on machines where it is missing.
+* Reapply per user tweaks from the maintenance task for the signed in user, not only SYSTEM.
 
 ## License
 
-This work is licensed under a [Creative Commons Attribution-NonCommercial 4.0 International License](http://creativecommons.org/licenses/by-nc/4.0/). See the LICENSE file for details.
+Released under the [PolyForm Small Business License 1.0.0](LICENSE). It is free for small
+businesses, individuals, and nonprofits. Larger organizations need a commercial license from
+SGT7 LLC.
+
+## Author
+
+Built by sgt7 LLC.

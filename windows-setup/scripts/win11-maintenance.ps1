@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------
 # File:     win11-maintenance.ps1
 # Purpose:  Automated maintenance script that runs via Task Scheduler to maintain Windows 11 cleanliness
-# Project:  Windows 11 Setup Script
+# Project:  windows-setup-sgt7
 # Author:   sgt7 LLC
 # ---------------------------------------------------------------
 
@@ -61,7 +61,7 @@ Write-Host "Started: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor
 Write-Host
 
 # ============================================================================================
-# Inline Function Definitions (copied from win11Functions.ps1)
+# Inline Function Definitions (copied from win11-functions.ps1)
 # These are included here so the script can run independently
 # ============================================================================================
 

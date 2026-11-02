@@ -1,11 +1,21 @@
 #!/usr/bin/env bash
 
-# 1 
+# ---------------------------------------------------------------
+# File:     debian-tiling-functions.sh
+# Purpose:  Setup step functions sourced by debian-tiling-setup.sh
+# Project:  debian-tiling-sgt7
+# Author:   sgt7 LLC
+# ---------------------------------------------------------------
+
+# 1. Backup configs, update, install, and remove packages.
+# Keeps copies of the stock shell dotfiles before later steps or stow can replace them.
 backup_configs() {
-  mkdir ~/.config-backups
-  cp ~/.bashrc ~/.config-backups
-  cp ~/.profile ~/.config-backups
-  cp ~/.bash_logout ~/.config-backups
+    mkdir -p ~/.config-backups
+    local file
+    for file in ~/.bashrc ~/.profile ~/.bash_logout; do
+        cp "$file" ~/.config-backups/ || echo "Warning: $file not found, skipping." >&2
+    done
+    echo 'Config files backed up successfully!'
 }
 
 update_debian() {
@@ -14,22 +24,25 @@ update_debian() {
     echo 'System updated successfully!'
 }
 
+# Package names live in package_install.txt so the list can change without editing code.
 install_packages() {
-    while IFS= read -r package; do
-        sudo apt-get -y install "$package"
+    # The -n test also reads a last line that has no trailing newline.
+    while IFS= read -r package || [ -n "$package" ]; do
+        sudo apt-get -y install "$package" || echo "Could not install $package, continuing." >&2
     done < package_install.txt
     echo 'Packages installed successfully!'
 }
 
+# Purges unwanted packages listed in package_remove.txt, then drops orphaned dependencies.
 remove_packages() {
-    while IFS= read -r package; do
-        sudo apt-get -y purge "$package"
+    while IFS= read -r package || [ -n "$package" ]; do
+        sudo apt-get -y purge "$package" || echo "Could not purge $package, continuing." >&2
     done < package_remove.txt
     sudo apt-get -y autoremove
     echo 'Packages removed successfully!'
 }
 
-# 2
+# 2. Create custom directories in the home directory.
 create_directories() {
     local dirs=(~/.config ~/dotfiles ~/.local/share/themes ~/.local/share/fonts ~/.local/share/icons ~/software ~/scripts ~/Pictures/wallpapers)
     for dir in "${dirs[@]}"; do
@@ -38,35 +51,35 @@ create_directories() {
     echo 'Directories created successfully!'
 }
 
-# 3
+# 3. Install fonts.
+# The Nerd Font provides the glyphs that polybar and the terminal theme rely on.
 install_font() {
-    font_dir=(~/fonttmp)
-    font_url="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/DroidSansMono.zip"
-    mkdir -p $font_dir
+    local font_dir=~/fonttmp
+    local font_url="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/DroidSansMono.zip"
+    mkdir -p "$font_dir" ~/.local/share/fonts
     echo 'Downloading and Installing Fonts...'
-    cd $font_dir
-    curl -L $font_url -o "DroidSansMonoNerdFont.zip"
+    curl -fL "$font_url" -o "$font_dir/DroidSansMonoNerdFont.zip"
     echo "Unzipping the font..."
-    unzip "DroidSansMonoNerdFont.zip" -d "."
-    cp *.otf ~/.local/share/fonts/
+    unzip -o "$font_dir/DroidSansMonoNerdFont.zip" -d "$font_dir"
+    cp "$font_dir"/*.otf ~/.local/share/fonts/
     echo "Cleaning up..."
-    cd ..
-    rm -rf $font_dir
+    rm -rf "$font_dir"
     echo 'Fonts installed successfully. Ensure you select the font in your terminal etc.'
 }
 
-# 4
+# 4. Configure console terminal settings.
 configure_console() {
     sudo dpkg-reconfigure console-setup
 }
 
-# 5
+# 5. Copy wallpapers to ~/Pictures/wallpapers.
 copy_wallpapers() {
     cp ./wallpapers/* ~/Pictures/wallpapers/
     echo 'Wallpaper copied successfully!'
 }
 
-# 6
+# 6. Customize tiling settings.
+# NOTE: Most config copies below are commented out, so only alacritty and the volume scripts are installed.
 customize_tiling() {
     #local dirs=(~/.config/i3/themes ~/.config/alacritty  ~/.config/polybar  ~/.config/rofi) 
     #for dir in "${dirs[@]}"; do
@@ -76,14 +89,15 @@ customize_tiling() {
     
     #cp configs/picom.conf ~/.config/picom.conf
     #cp configs/i3config ~/.config/i3/config
+    mkdir -p ~/.config/alacritty ~/scripts
     cp configs/alacritty/alacritty.yml ~/.config/alacritty/alacritty.yml
     #cp configs/alacritty/catppuccin-macchiato.yml ~/.config/alacritty/catppuccin-macchiato.yml
     #cp configs/polybar/config.ini ~/.config/polybar/config.ini
     #cp configs/polybar/launch.sh ~/.config/polybar/launch.sh
     #cp configs/rofi/config.rasi ~/.config/rofi/config.rasi
     #cp configs/rofi/catppuccin-macchiato.rasi ~/.config/rofi/catppuccin-macchiato.rasi
-    cp scripts/down_volume.sh ~/scripts/down_volume.sh
-    cp scripts/up_volume.sh ~/scripts/up_volume.sh
+    cp scripts/volume-down.sh ~/scripts/volume-down.sh
+    cp scripts/volume-up.sh ~/scripts/volume-up.sh
     
     #echo "" > ~/.Xresources
     #echo "" >> ~/.Xresources
@@ -93,25 +107,30 @@ customize_tiling() {
     #echo 'xrandr --output HDMI-A-0 --primary --mode 3840x2160 --fb 9000x5760 --rotate normal --scale .8x.8 --panning 5760x3240+0+0' > ~/.xinitrc
 }
 
-# 7
+# 7. Customize vimrc file settings.
+# NOTE: This overwrites any existing ~/.vimrc. The bell settings silence the terminal beep.
 configure_vimrc() {
-    echo "set noerrorbells" > ~/.vimrc
-    echo "set visualbell" >> ~/.vimrc
-    echo "set t_vb=" >> ~/.vimrc
-    echo "syntax on" >> ~/.vimrc
-    echo "set number" >> ~/.vimrc
-    echo "set mouse=r" >> ~/.vimrc
+    cat > ~/.vimrc <<'VIMRC'
+set noerrorbells
+set visualbell
+set t_vb=
+syntax on
+set number
+set mouse=r
+VIMRC
     echo 'Vim customized successfully!'
 }
 
-# 8
+# 8. Install VLC, plugins, and restricted extras.
+# The extra codec packages are needed for formats Debian does not play out of the box.
 install_vlc_restricted_extras() {
     sudo apt-get -y install vlc vlc-plugin-samba vlc-plugin-video-splitter
     sudo apt-get -y install libavcodec-extra gstreamer1.0-libav gstreamer1.0-plugins-ugly gstreamer1.0-vaapi
     echo 'VLC installed and successfully!'
 }
 
-# 9
+# 9. Install UFW and enable it.
+# SECURITY: Enables a host firewall that denies inbound traffic by default.
 install_ufw_enable() {
     sudo apt-get -y install ufw
     sudo ufw enable
@@ -120,26 +139,29 @@ install_ufw_enable() {
     echo 'UFW installed and successfully!'
 }
 
-# 10
+# 10. Configure swappiness.
+# A value of 10 keeps more of the desktop in RAM instead of swapping it out early.
 configure_swappiness() {
     echo 'swappiness before configuration:'
     sudo cat /proc/sys/vm/swappiness
     sudo /bin/su -c "echo 'vm.swappiness = 10' > /etc/sysctl.d/swappiness.conf"
     sudo sysctl -f /etc/sysctl.d/swappiness.conf
     echo 'swappiness after configuration:'
-    sudo sysctl -a | grep vm.swappiness
+    sysctl vm.swappiness
 }
 
-# 11
+# 11. Speed up boot time.
+# Backs up the GRUB config once, so a rerun cannot replace the original with an edited copy.
 speed_boot_time() {
-    sudo cp /etc/default/grub /etc/default/grub.original
+    [ -f /etc/default/grub.original ] || sudo cp -p /etc/default/grub /etc/default/grub.original
     sudo sed -i 's/GRUB_TIMEOUT=5/GRUB_TIMEOUT=0/g' /etc/default/grub
     sudo update-grub
     sudo grep GRUB_TIMEOUT /etc/default/grub
     echo 'Boot time speed configured successfully!'
 }
 
-# 12
+# 12. Prep and install VSCode.
+# SECURITY: Adds the Microsoft signing key so apt verifies VSCode packages.
 prep_for_vscode_install() {
     sudo apt-get -y install wget gpg
     wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
@@ -149,6 +171,7 @@ prep_for_vscode_install() {
     echo 'VSScode configured for installation successfully!'
 }
 
+# Runs after the repository is added, so apt can see the code package.
 install_vscode() {
     sudo apt-get -y install apt-transport-https
     sudo apt-get update
@@ -156,7 +179,7 @@ install_vscode() {
     echo 'VSScode installed successfully!'
 }
 
-# 13
+# 13. Configure Git.
 configure_git() {
     cp configs/.gitignore_global ~/
     git config --global init.defaultBranch main

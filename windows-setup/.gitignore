@@ -1,44 +1,17 @@
-# Windows
+# ---------------------------------------------------------------
+# File:     .gitignore
+# Purpose:  Keep secrets, OS clutter, and runtime logs out of version control
+# Project:  windows-setup-sgt7
+# Author:   sgt7 LLC
+# ---------------------------------------------------------------
 
-# Windows thumbnail cache files
-Thumbs.db
-Thumbs.db:encryptable
-ehthumbs.db
-ehthumbs_vista.db
-
-# Dump file
-\*.stackdump
-
-# Folder config file
-[Dd]esktop.ini
-
-# Recycle Bin used on file shares
-$RECYCLE.BIN/
-
-# Windows Installer files
-_.cab
-_.msi
-_.msix
-_.msm
-\*.msp
-
-# Windows shortcuts
-\*.lnk
+# --- Operating system files ---
 
 # macOS
-
-# General
 .DS_Store
 .AppleDouble
 .LSOverride
-
-# Icon must end with two \r
-Icon
-
-# Thumbnails
-.\_\*
-
-# Files that might appear in the root of a volume
+._*
 .DocumentRevisions-V100
 .fseventsd
 .Spotlight-V100
@@ -46,54 +19,61 @@ Icon
 .Trashes
 .VolumeIcon.icns
 .com.apple.timemachine.donotpresent
-
-# Directories potentially created on remote AFP share
 .AppleDB
 .AppleDesktop
 Network Trash Folder
 Temporary Items
 .apdisk
 
-# --- AI & LLM Tools ---
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
 
-# Claude (Anthropic)
+# Linux
+*~
+.directory
+.Trash-*
+
+# --- Editors and AI tools ---
+.vscode/
+.idea/
+*.swp
 .claude/
 claude_history/
-
-# ChatGPT / OpenAI 
-# (Common for unofficial CLI tools or local logging)
 .chatgpt/
 .openai/
 chatgpt_history.json
 .gpt-pilot/
-
-# Google Gemini / Vertex AI
 .gemini/
 .vertexai/
-
-# Perplexity & Other Search/Research AI
 .perplexity/
 perplexity_results/
-
-# General AI/LLM metadata and local caches
 .llm/
 .ai_history/
 .cursor/
 .aider*
 .continuation/
 .idx/
-
-# Local Vector Databases & Embeddings
-# (If you are using local RAG or indexing tools)
 .chroma/
 .pinecone/
 .faiss/
 storage.sqlite
 
-.vscode/
-
 # --- Script-generated runtime output ---
 logs/
+*.log
+fonttmp/
 
 # SECURITY: Environment files hold real secrets. Only the fake example file is committed.
 .env
@@ -120,11 +100,11 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
-
 # NOTE: Variable files may hold secrets. Commit only the .example copies.
 *.tfvars
 *.tfvars.json
 !*.tfvars.example
+# NOTE: The Terraform lock file is intentionally committed to pin provider versions.
 
 # SECURITY: Cloud and tool credentials.
 .aws/

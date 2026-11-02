@@ -1,0 +1,117 @@
+# ---------------------------------------------------------------
+# File:     .gitignore
+# Purpose:  Keep secrets, OS clutter, and runtime logs out of version control
+# Project:  debian-gnome-sgt7
+# Author:   sgt7 LLC
+# ---------------------------------------------------------------
+
+# --- Operating system files ---
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# --- Editors and AI tools ---
+.vscode/
+.idea/
+*.swp
+.claude/
+claude_history/
+.chatgpt/
+.openai/
+chatgpt_history.json
+.gpt-pilot/
+.gemini/
+.vertexai/
+.perplexity/
+perplexity_results/
+.llm/
+.ai_history/
+.cursor/
+.aider*
+.continuation/
+.idx/
+.chroma/
+.pinecone/
+.faiss/
+storage.sqlite
+
+# --- Script-generated runtime output ---
+logs/
+*.log
+fonttmp/
+
+# SECURITY: Environment files hold real secrets. Only the fake example file is committed.
+.env
+.env.*
+!.env.example
+
+# SECURITY: Keys and certificates must never be committed.
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.jks
+id_rsa*
+id_ed25519*
+
+# SECURITY: Terraform state can contain secrets in plain text.
+*.tfstate
+*.tfstate.*
+crash.log
+.terraform/
+*.tfplan
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+# NOTE: Variable files may hold secrets. Commit only the .example copies.
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+# NOTE: The Terraform lock file is intentionally committed to pin provider versions.
+
+# SECURITY: Cloud and tool credentials.
+.aws/
+credentials
+*.secret
+*.secrets
+secrets.*
+!secrets.example.*
+.vault-pass*
+*.vault

@@ -1,6 +1,6 @@
 #Needs to be fixed
 
-12
-14
-Need to check 17
-Need to fix 21
+Step 12 (tiling configs): expect it to be incomplete. It only copies the Sway and foot configs, so rofi and waybar won't be set up.
+Step 14 (VLC and codecs): this will probably fail unless RPM Fusion is enabled first, because nothing in the script turns it on.
+Step 17 (Git config): this has never been checked.
+Step 21 (Docker): the repo command is fixed but hasn't been run on Fedora yet. It's the only step I changed in code.
