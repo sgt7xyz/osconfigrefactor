@@ -222,7 +222,7 @@ gpgkey=https://www.virtualbox.org/download/oracle_vbox_2016.asc
 EOF'
     echo 'VirtualBox Fedora repository added successfully.'
 
-    sudo dnf -y install VirtualBox-7.1
+    sudo dnf -y install VirtualBox-7.2
     echo 'VirtualBox installed successfully!'
 
     # Membership in vboxusers is needed for USB passthrough to guests.

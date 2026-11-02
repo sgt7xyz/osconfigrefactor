@@ -397,7 +397,7 @@ These entries describe `common-functions.sh`, which is identical in both tiling 
 
 * **Does:** Calls `install_development_tools`, installs kernel headers and DKMS, imports Oracle's
   signing key, writes `/etc/yum.repos.d/virtualbox.repo` with an HTTPS `baseurl`, installs
-  VirtualBox 7.1, and adds the user to `vboxusers`.
+  VirtualBox 7.2, and adds the user to `vboxusers`.
 * **Inputs:** `$USER`.
 * **Outputs:** VirtualBox installed.
 * **Why it exists:** VirtualBox needs kernel modules built for the running kernel.
@@ -426,6 +426,7 @@ These entries describe `common-functions.sh`, which is identical in both tiling 
 
 | Date       | Summary                                                                                                               |
 | :--------- | :-------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-02 | Moved the VirtualBox install from 7.1 to 7.2 (7.2.22 is the current release).                                         |
 | 2026-11-01 | Renamed steps to match debian-tiling, such as configure_firewall and configure_boot_time, and ordered them by menu.   |
 | 2026-11-01 | Moved the menu engine and shared steps into common-functions.sh, identical in both tiling repos.                      |
 | 2026-11-01 | Built the menu from one ordered list, matched steps 1 to 14 with debian-tiling, merged codecs into VLC, added Brave.  |
