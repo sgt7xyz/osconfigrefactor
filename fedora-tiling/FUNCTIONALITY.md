@@ -158,11 +158,20 @@ All other functions live in `fedora-tiling-functions.sh` and take no arguments.
   `fwupdmgr` exits with 2 when there is nothing to do, so a non-zero exit there only prints a
   message.
 
+### apply_package_list
+
+* **Does:** Runs a package command, such as `dnf install`, once per name in a list file.
+* **Inputs:** The list file, then the command to run. Blank lines and `#` comments are skipped.
+* **Outputs:** A list of every package that failed, and a non-zero return if any did.
+* **Why it exists:** One bad name should not stop the rest, but it must not be lost in the scroll
+  either. The list is read on its own file descriptor so `dnf` cannot consume it from stdin.
+* **Side effects:** Whatever the command does.
+
 ### install_packages and remove_packages
 
 * **Does:** Installs each package in `package_install.txt`, then removes each package in
-  `package_remove.txt` and runs `dnf autoremove`. Each warns and skips if its list is missing.
-* **Inputs:** The two list files. A package that fails is reported and skipped.
+  `package_remove.txt` and runs `dnf autoremove`, both through `apply_package_list`.
+* **Inputs:** The two list files. A missing list or a failed package fails the step.
 * **Outputs:** Installed and removed packages.
 * **Why it exists:** Keeps the package lists in data instead of code.
 * **Side effects:** Network calls and system package changes.
@@ -203,9 +212,10 @@ All other functions live in `fedora-tiling-functions.sh` and take no arguments.
 
 ### install_font
 
-* **Does:** Downloads the DroidSansMono Nerd Font v3.4.0 zip into `~/fonttmp`, copies the `.otf`
-  files into `~/.local/share/fonts`, rebuilds the font cache, and removes the temporary folder.
-* **Inputs:** A pinned GitHub release URL.
+* **Does:** Downloads the DroidSansMono Nerd Font v3.4.0 zip into `~/fonttmp`, checks its
+  SHA-256, copies the `.otf` files into `~/.local/share/fonts`, rebuilds the font cache, and removes
+  the temporary folder.
+* **Inputs:** A pinned GitHub release URL and the checksum published with that release.
 * **Outputs:** Installed user fonts.
 * **Why it exists:** The bar, launcher, and terminal use Nerd Font glyphs.
 * **Side effects:** Network call and file writes. It works with full paths and never changes the
@@ -278,12 +288,16 @@ All other functions live in `fedora-tiling-functions.sh` and take no arguments.
 
 ### install_firewalld_enable
 
-* **Does:** Installs firewalld and its GUI, enables and starts the service, and prints its state,
-  default zone, and rules.
+* **Does:** Installs firewalld and its GUI, starts it, strips every service and port from the
+  `public` zone except `dhcpv6-client`, makes `public` the default zone, and prints the result.
 * **Inputs:** None.
-* **Outputs:** A running host firewall.
-* **Why it exists:** Confirms the firewall is active and shows the rules for review.
-* **Side effects:** Package and service state changes.
+* **Outputs:** A running stateful firewall. Nothing can connect in, and replies to connections the
+  host started are let back in.
+* **Why it exists:** Fedora desktops can default to the `FedoraWorkstation` zone, which accepts
+  every port from 1025 to 65535, and even `public` allows `ssh` and `mdns`. A workstation that
+  offers no services needs neither.
+* **Side effects:** Firewall configuration changes. Local network discovery over mDNS stops
+  working. A NetworkManager connection with its own zone set keeps that zone.
 
 ### configure_swappiness
 
@@ -347,6 +361,7 @@ All other functions live in `fedora-tiling-functions.sh` and take no arguments.
 
 | Date       | Summary                                                                                                               |
 | :--------- | :-------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-01 | Locked firewalld to deny all inbound, verified the font checksum, and listed failed packages at the end.              |
 | 2026-11-01 | Added a ShellCheck workflow with a pinned, checksum verified release and checkout SHA.                                |
 | 2026-11-01 | Added strict mode with per step error handling and fixed the VM prep, Docker repo, VirtualBox repo, and dnf settings. |
 | 2026-11-01 | Added FUNCTIONALITY.md. Renamed all scripts to kebab-case.                                                            |

@@ -151,10 +151,19 @@ All other functions live in `debian-tiling-functions.sh` and take no arguments.
 * **Why it exists:** Later installs need a current index.
 * **Side effects:** Network calls and system package changes through `sudo`.
 
+### apply_package_list
+
+* **Does:** Runs a package command, such as `apt-get install`, once per name in a list file.
+* **Inputs:** The list file, then the command to run. Blank lines and `#` comments are skipped.
+* **Outputs:** A list of every package that failed, and a non-zero return if any did.
+* **Why it exists:** One bad name should not stop the rest, but it must not be lost in the scroll
+  either. The list is read on its own file descriptor so `apt-get` cannot consume it from stdin.
+* **Side effects:** Whatever the command does.
+
 ### install_packages
 
-* **Does:** Installs each package in `package_install.txt`, one at a time.
-* **Inputs:** `package_install.txt`. A package that fails to install is reported and skipped.
+* **Does:** Installs each package in `package_install.txt` through `apply_package_list`.
+* **Inputs:** `package_install.txt`. Failed packages are listed at the end and fail the step.
 * **Outputs:** Installed packages.
 * **Why it exists:** Keeps the package list in data instead of code.
 * **Side effects:** Network calls and system package changes through `sudo`.
@@ -162,7 +171,7 @@ All other functions live in `debian-tiling-functions.sh` and take no arguments.
 ### remove_packages
 
 * **Does:** Purges each package in `package_remove.txt`, then runs `apt-get autoremove`.
-* **Inputs:** `package_remove.txt`. A package that fails to purge is reported and skipped.
+* **Inputs:** `package_remove.txt`. Failed packages are listed at the end and fail the step.
 * **Outputs:** Removed packages.
 * **Why it exists:** Removes software that is not wanted on the desktop.
 * **Side effects:** System package removal through `sudo`.
@@ -178,9 +187,10 @@ All other functions live in `debian-tiling-functions.sh` and take no arguments.
 
 ### install_font
 
-* **Does:** Downloads the DroidSansMono Nerd Font v3.2.1 zip, unpacks it in `~/fonttmp`, copies
-  the `.otf` files into `~/.local/share/fonts`, and removes the temporary directory.
-* **Inputs:** A pinned GitHub release URL.
+* **Does:** Downloads the DroidSansMono Nerd Font v3.4.0 zip, checks its SHA-256, unpacks it in
+  `~/fonttmp`, copies the `.otf` files into `~/.local/share/fonts`, rebuilds the font cache, and
+  removes the temporary directory.
+* **Inputs:** A pinned GitHub release URL and the checksum published with that release.
 * **Outputs:** Installed user fonts.
 * **Why it exists:** Polybar and the terminal theme use Nerd Font glyphs.
 * **Side effects:** Network call and file writes. It works with full paths and never changes the
@@ -231,11 +241,15 @@ All other functions live in `debian-tiling-functions.sh` and take no arguments.
 
 ### install_ufw_enable
 
-* **Does:** Installs and enables UFW, then prints its status and application profiles.
-* **Inputs:** None.
-* **Outputs:** An active host firewall that denies inbound traffic by default.
-* **Why it exists:** Debian ships without an active firewall.
-* **Side effects:** Firewall rule changes.
+* **Does:** Installs UFW, deletes its stock mDNS and UPnP accept rules, sets incoming to deny and
+  outgoing to allow, enables it without a prompt, and prints the status.
+* **Inputs:** `/etc/ufw/before.rules` and `/etc/ufw/before6.rules`, each backed up once to
+  `.original`.
+* **Outputs:** An active stateful firewall. Nothing can connect in, and replies to connections the
+  host started are let back in.
+* **Why it exists:** Debian ships without an active firewall, and a workstation offers no services.
+* **Side effects:** Firewall rule changes. Local network discovery, such as finding printers or
+  `.local` names over mDNS, stops working.
 
 ### configure_swappiness
 
@@ -294,6 +308,7 @@ All other functions live in `debian-tiling-functions.sh` and take no arguments.
 
 | Date       | Summary                                                                                                    |
 | :--------- | :--------------------------------------------------------------------------------------------------------- |
+| 2026-11-01 | Locked UFW to deny all inbound, verified the font checksum, and listed failed packages at the end.         |
 | 2026-11-01 | Added a ShellCheck workflow with a pinned, checksum verified release and checkout SHA.                     |
 | 2026-11-01 | Added strict mode with per step error handling and fixed the font step, alacritty folder, and GRUB backup. |
 | 2026-11-01 | Added FUNCTIONALITY.md. Renamed all scripts to kebab-case.                                                 |

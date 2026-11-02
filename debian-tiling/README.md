@@ -116,7 +116,9 @@ Run `./debian-tiling-setup.sh` and pick a step by number. Choose **15** to run e
 
 * Review every script before running it. Most steps call `sudo`.
 * Step 1 backs up `~/.bashrc`, `~/.profile`, and `~/.bash_logout` to `~/.config-backups`.
-* Step 9 enables UFW, which denies inbound connections by default.
+* Step 3 checks the Nerd Font download against its published SHA-256 before installing it.
+* Step 9 enables UFW so it denies every inbound connection the host did not start, including the
+  mDNS and UPnP discovery traffic stock UFW allows. Replies to outbound traffic still get in.
 * Step 12 adds the Microsoft signing key so apt verifies VSCode packages.
 * No credentials are stored. Set your Git name and email by hand after step 13.
 

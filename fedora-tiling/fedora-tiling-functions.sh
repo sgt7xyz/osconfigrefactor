@@ -46,30 +46,40 @@ update_firmware() {
 }
 
 # 5. Install and remove packages.
+# Runs a package command once per name in a list file. A bad name does not stop the rest, but every
+# failure is listed at the end and the step returns non-zero so run_step reports it.
+apply_package_list() {
+    local list_file="$1"
+    shift
+    if [ ! -f "$list_file" ]; then
+        echo "Error: $list_file not found." >&2
+        return 1
+    fi
+    local package
+    local failed=()
+    # The list is read on fd 3 so a package tool that reads stdin cannot swallow the remaining names.
+    # The -n test also reads a last line that has no trailing newline. Blank and # lines are skipped.
+    while read -r package <&3 || [ -n "$package" ]; do
+        [[ -z "$package" || "$package" == \#* ]] && continue
+        "$@" "$package" || failed+=("$package")
+    done 3< "$list_file"
+    if (( ${#failed[@]} > 0 )); then
+        echo "Failed for these packages in $list_file: ${failed[*]}" >&2
+        return 1
+    fi
+}
+
 # Package names live in package_install.txt so the list can change without editing code.
 install_packages() {
-    if [ -f package_install.txt ]; then
-        # The -n test also reads a last line that has no trailing newline.
-        while IFS= read -r package || [ -n "$package" ]; do
-            sudo dnf -y install "$package" || echo "Could not install $package, continuing." >&2
-        done < package_install.txt
-        echo 'Packages installed successfully!'
-    else
-        echo 'Warning: package_install.txt not found!'
-    fi
+    apply_package_list package_install.txt sudo dnf -y install
+    echo 'Packages installed successfully!'
 }
 
 # Removes unwanted packages listed in package_remove.txt, then drops orphaned dependencies.
 remove_packages() {
-    if [ -f package_remove.txt ]; then
-        while IFS= read -r package || [ -n "$package" ]; do
-            sudo dnf -y remove "$package" || echo "Could not remove $package, continuing." >&2
-        done < package_remove.txt
-        sudo dnf -y autoremove
-        echo 'Packages removed successfully!'
-    else
-        echo 'Warning: package_remove.txt not found!'
-    fi
+    apply_package_list package_remove.txt sudo dnf -y remove
+    sudo dnf -y autoremove
+    echo 'Packages removed successfully!'
 }
 
 # 6. Enable Flathub repository.
@@ -104,17 +114,23 @@ create_directories() {
 
 # 10. Install Nerd font.
 # The Nerd Font provides the icon glyphs used by the bar, launcher, and terminal.
+# SECURITY: The archive is checked against the SHA-256 published with the release, so a changed
+# download is rejected before anything is installed.
 install_font() {
     local font_dir=~/fonttmp
     local font_url="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/DroidSansMono.zip"
+    local font_sha256="030229341907c833862f00682f0f4bce65d0dc8d281fc9a40d80b7ee9d306e88"
+    # A failed earlier run can leave files behind, so the work folder starts empty.
+    rm -rf "$font_dir"
     mkdir -p "$font_dir" ~/.local/share/fonts
     echo 'Downloading and Installing Fonts...'
     curl -fL "$font_url" -o "$font_dir/DroidSansMonoNerdFont.zip"
+    echo "$font_sha256  $font_dir/DroidSansMonoNerdFont.zip" | sha256sum --check --strict
     echo "Unzipping the font..."
     unzip -o "$font_dir/DroidSansMonoNerdFont.zip" -d "$font_dir"
     cp "$font_dir"/*.otf ~/.local/share/fonts/
     echo "Refreshing font cache..."
-    fc-cache -f -v
+    fc-cache -f
     echo "Cleaning up..."
     rm -rf "$font_dir"
     echo 'Fonts installed successfully. Ensure you select the font in your terminal etc.'
@@ -240,20 +256,36 @@ configure_git() {
 }
 
 # 18. Install and enable firewalld.
-# SECURITY: Makes sure the host firewall is running and prints the active zone for review.
+# SECURITY: A workstation offers no network services, so every inbound connection the host did not
+# start is rejected. firewalld is stateful, so replies to traffic the host started are still let in.
 install_firewalld_enable() {
     # firewalld usually ships with Fedora, so this install is a no-op unless it was removed.
     sudo dnf -y install firewalld
     sudo dnf -y install firewall-config
-    
-    sudo systemctl enable firewalld
-    sudo systemctl start firewalld
-    
+    sudo systemctl enable --now firewalld
+
+    # SECURITY: Fedora desktops can default to the FedoraWorkstation zone, which accepts every TCP
+    # and UDP port from 1025 to 65535, and even the public zone allows ssh and mdns. The public zone
+    # is stripped of all services and ports and made the default, whichever zone was active before.
+    local zone=public
+    local service port
+    for service in $(sudo firewall-cmd --permanent --zone="$zone" --list-services); do
+        sudo firewall-cmd --permanent --zone="$zone" --remove-service="$service"
+    done
+    for port in $(sudo firewall-cmd --permanent --zone="$zone" --list-ports); do
+        sudo firewall-cmd --permanent --zone="$zone" --remove-port="$port"
+    done
+    # NOTE: DHCPv6 replies do not match a tracked connection, so this one service is kept for IPv6
+    # addressing to work. IPv4 DHCP uses raw sockets and is not affected by the zone.
+    sudo firewall-cmd --permanent --zone="$zone" --add-service=dhcpv6-client
+    sudo firewall-cmd --set-default-zone="$zone"
+    sudo firewall-cmd --reload
+
     sudo firewall-cmd --state
-    sudo firewall-cmd --get-default-zone
-    sudo firewall-cmd --list-all
-    
-    echo 'firewalld installed and enabled successfully!'
+    sudo firewall-cmd --get-active-zones
+    sudo firewall-cmd --zone="$zone" --list-all
+    # NOTE: A NetworkManager connection with its own zone set ignores the default zone.
+    echo "firewalld enabled. Check that every network interface above is in the $zone zone."
 }
 
 # 19. Configure swappiness.

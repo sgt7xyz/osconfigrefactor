@@ -125,7 +125,9 @@ Run `./fedora-tiling-setup.sh` and pick a step by number. Choose **23** to run e
 * Review every script before running it. Most steps call `sudo`.
 * Step 1 backs up `~/.bashrc`, `~/.bash_profile`, and `~/.bash_logout` to `~/.config-backups`.
 * Steps 15 and 22 import vendor signing keys and enable `gpgcheck` for their repositories.
-* Step 18 makes sure firewalld is enabled and prints the active zone for review.
+* Step 10 checks the Nerd Font download against its published SHA-256 before installing it.
+* Step 18 makes a stripped `public` zone the firewalld default, so it rejects every inbound
+  connection the host did not start. Replies to outbound traffic still get in.
 * Step 21 adds your user to the `docker` group, which is root equivalent on this host.
 * No credentials are stored. Set your Git name and email by hand after step 17.
 

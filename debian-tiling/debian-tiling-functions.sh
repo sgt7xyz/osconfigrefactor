@@ -24,20 +24,38 @@ update_debian() {
     echo 'System updated successfully!'
 }
 
+# Runs a package command once per name in a list file. A bad name does not stop the rest, but every
+# failure is listed at the end and the step returns non-zero so run_step reports it.
+apply_package_list() {
+    local list_file="$1"
+    shift
+    if [ ! -f "$list_file" ]; then
+        echo "Error: $list_file not found." >&2
+        return 1
+    fi
+    local package
+    local failed=()
+    # The list is read on fd 3 so a package tool that reads stdin cannot swallow the remaining names.
+    # The -n test also reads a last line that has no trailing newline. Blank and # lines are skipped.
+    while read -r package <&3 || [ -n "$package" ]; do
+        [[ -z "$package" || "$package" == \#* ]] && continue
+        "$@" "$package" || failed+=("$package")
+    done 3< "$list_file"
+    if (( ${#failed[@]} > 0 )); then
+        echo "Failed for these packages in $list_file: ${failed[*]}" >&2
+        return 1
+    fi
+}
+
 # Package names live in package_install.txt so the list can change without editing code.
 install_packages() {
-    # The -n test also reads a last line that has no trailing newline.
-    while IFS= read -r package || [ -n "$package" ]; do
-        sudo apt-get -y install "$package" || echo "Could not install $package, continuing." >&2
-    done < package_install.txt
+    apply_package_list package_install.txt sudo apt-get -y install
     echo 'Packages installed successfully!'
 }
 
 # Purges unwanted packages listed in package_remove.txt, then drops orphaned dependencies.
 remove_packages() {
-    while IFS= read -r package || [ -n "$package" ]; do
-        sudo apt-get -y purge "$package" || echo "Could not purge $package, continuing." >&2
-    done < package_remove.txt
+    apply_package_list package_remove.txt sudo apt-get -y purge
     sudo apt-get -y autoremove
     echo 'Packages removed successfully!'
 }
@@ -53,15 +71,23 @@ create_directories() {
 
 # 3. Install fonts.
 # The Nerd Font provides the glyphs that polybar and the terminal theme rely on.
+# SECURITY: The archive is checked against the SHA-256 published with the release, so a changed
+# download is rejected before anything is installed.
 install_font() {
     local font_dir=~/fonttmp
-    local font_url="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/DroidSansMono.zip"
+    local font_url="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/DroidSansMono.zip"
+    local font_sha256="030229341907c833862f00682f0f4bce65d0dc8d281fc9a40d80b7ee9d306e88"
+    # A failed earlier run can leave files behind, so the work folder starts empty.
+    rm -rf "$font_dir"
     mkdir -p "$font_dir" ~/.local/share/fonts
     echo 'Downloading and Installing Fonts...'
     curl -fL "$font_url" -o "$font_dir/DroidSansMonoNerdFont.zip"
+    echo "$font_sha256  $font_dir/DroidSansMonoNerdFont.zip" | sha256sum --check --strict
     echo "Unzipping the font..."
     unzip -o "$font_dir/DroidSansMonoNerdFont.zip" -d "$font_dir"
     cp "$font_dir"/*.otf ~/.local/share/fonts/
+    echo "Refreshing font cache..."
+    fc-cache -f
     echo "Cleaning up..."
     rm -rf "$font_dir"
     echo 'Fonts installed successfully. Ensure you select the font in your terminal etc.'
@@ -130,13 +156,26 @@ install_vlc_restricted_extras() {
 }
 
 # 9. Install UFW and enable it.
-# SECURITY: Enables a host firewall that denies inbound traffic by default.
+# SECURITY: A workstation offers no network services, so every inbound connection the host did not
+# start is denied. UFW is stateful, so replies to traffic the host started are still let back in.
 install_ufw_enable() {
     sudo apt-get -y install ufw
-    sudo ufw enable
+    # SECURITY: Stock UFW also accepts inbound mDNS and UPnP multicast for service discovery. Those
+    # rules are deleted so nothing on the LAN can reach discovery services on this host. Each rules
+    # file is backed up once, so a rerun cannot replace the original with an edited copy.
+    local rules
+    for rules in /etc/ufw/before.rules /etc/ufw/before6.rules; do
+        [ -f "$rules.original" ] || sudo cp -p "$rules" "$rules.original"
+        sudo sed -i -E '/^-A ufw6?-before-input .*--dport (5353|1900) -j ACCEPT$/d' "$rules"
+    done
+    sudo ufw default deny incoming
+    sudo ufw default allow outgoing
+    # NOTE: --force skips the confirmation prompt, which would otherwise read the next menu answer.
+    sudo ufw --force enable
+    # The reload applies the edited rules files when UFW was already enabled before this step.
+    sudo ufw reload
     sudo ufw status verbose
-    sudo ufw app list
-    echo 'UFW installed and successfully!'
+    echo 'UFW enabled. Inbound connections the host did not start are denied.'
 }
 
 # 10. Configure swappiness.
