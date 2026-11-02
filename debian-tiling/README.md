@@ -16,20 +16,21 @@ automated. Fork it and adjust the package lists and configs to your taste.
 
 ## Architecture
 
-`debian-tiling-setup.sh` shows a numbered menu and calls functions from
-`debian-tiling-functions.sh`. Package lists and dotfiles are read from the repository at run time.
+`debian-tiling-setup.sh` builds a grouped, numbered menu from one ordered list of steps and calls
+functions from `common-functions.sh` and `debian-tiling-functions.sh`. Package lists and dotfiles
+are read from the repository at run time.
 
 ```text
-debian-tiling-setup.sh --> debian-tiling-functions.sh --> apt, curl, ufw, git
-                                     |
-                                     +--> package_install.txt, package_remove.txt, configs/, scripts/, wallpapers/
+debian-tiling-setup.sh --> common-functions.sh + debian-tiling-functions.sh --> apt, curl, ufw, git
+                                                           |
+                                                           +--> package_install.txt, package_remove.txt, configs/, scripts/, wallpapers/
 ```
 
 ## Prerequisites
 
 | Requirement                       | Version                |
 | :-------------------------------- | :--------------------- |
-| Debian minimal or netinst install | 12 (bookworm) or newer |
+| Debian minimal or netinst install | 13 (trixie) or newer   |
 | Bash                              | 5.0 or newer           |
 | A user with `sudo` rights         | Not applicable         |
 | Internet access                   | Not applicable         |
@@ -74,32 +75,37 @@ This project reads no environment variables. Behavior is controlled by the files
 
 ## Usage
 
-Run `./debian-tiling-setup.sh` and pick a step by number. Choose **15** to run every step in order.
+Run the setup script and pick a step by number. Choose **16** to run every step in order. When
+it finishes, any steps that failed are listed together. Steps 1 to 14 are the same in
+fedora-tiling, so the same number means the same step on both systems.
 
-| Option | Step                                                 |
-| -----: | :--------------------------------------------------- |
-|      1 | Backup configs, update, install, and remove packages |
-|      2 | Create custom directories in your home directory     |
-|      3 | Install fonts                                        |
-|      4 | Configure console terminal settings                  |
-|      5 | Copy wallpapers to `~/Pictures/wallpapers`           |
-|      6 | Customize tiling settings                            |
-|      7 | Customize vimrc file settings                        |
-|      8 | Install VLC, plugins, and restricted extras          |
-|      9 | Install UFW and enable it                            |
-|     10 | Configure swappiness                                 |
-|     11 | Speed up boot time                                   |
-|     12 | Prep and install VSCode                              |
-|     13 | Configure Git                                        |
-|     15 | Execute all                                          |
-|      0 | Exit                                                 |
+| Option | Group                | Step                                             |
+| -----: | :------------------- | :----------------------------------------------- |
+|      1 | System preparation   | Back up shell dotfiles                           |
+|      2 | System preparation   | Update and upgrade the system                    |
+|      3 | System preparation   | Install and remove packages                      |
+|      4 | Environment setup    | Create custom directories                        |
+|      5 | Environment setup    | Install Nerd font                                |
+|      6 | Environment setup    | Copy wallpapers                                  |
+|      7 | Environment setup    | Install i3, polybar, rofi, and alacritty configs |
+|      8 | Environment setup    | Customize vimrc file                             |
+|      9 | Environment setup    | Configure Git                                    |
+|     10 | Applications         | Install VLC, plugins, and codecs                 |
+|     11 | Applications         | Install VSCode                                   |
+|     12 | System configuration | Enable the firewall (deny all inbound)           |
+|     13 | System configuration | Configure swappiness                             |
+|     14 | System configuration | Speed up boot time                               |
+|     15 | Debian extras        | Configure console font and size                  |
+|     16 | All                  | Execute all steps                                |
+|      0 | Exit                 | Exit                                             |
 
 ## Project structure
 
 ```text
 .
 ├── debian-tiling-setup.sh       # Entry point and menu
-├── debian-tiling-functions.sh   # One function per setup step
+├── common-functions.sh          # Menu engine and steps shared with fedora-tiling
+├── debian-tiling-functions.sh   # Debian specific setup steps
 ├── debian-tiling-vm-prep.sh     # Optional VirtualBox guest prep
 ├── package_install.txt          # Packages to install
 ├── package_remove.txt           # Packages to purge
@@ -116,16 +122,18 @@ Run `./debian-tiling-setup.sh` and pick a step by number. Choose **15** to run e
 
 * Review every script before running it. Most steps call `sudo`.
 * Step 1 backs up `~/.bashrc`, `~/.profile`, and `~/.bash_logout` to `~/.config-backups`.
-* Step 9 enables UFW, which denies inbound connections by default.
-* Step 12 adds the Microsoft signing key so apt verifies VSCode packages.
-* No credentials are stored. Set your Git name and email by hand after step 13.
+* Step 5 checks the Nerd Font download against its published SHA-256 before installing it.
+* Step 11 adds the Microsoft signing key so apt verifies VSCode packages.
+* Step 12 enables UFW so it denies every inbound connection the host did not start, including the
+  mDNS and UPnP discovery traffic stock UFW allows. Replies to outbound traffic still get in.
+* No credentials are stored. Set your Git name and email by hand after step 9.
 
 ## Testing
 
 There are no automated tests. Lint the scripts with ShellCheck, which also runs in CI on every push.
 
 ```bash
-shellcheck -x debian-tiling-setup.sh debian-tiling-functions.sh debian-tiling-vm-prep.sh scripts/*.sh
+shellcheck -x debian-tiling-setup.sh common-functions.sh debian-tiling-functions.sh debian-tiling-vm-prep.sh scripts/*.sh
 ```
 
 Test full runs in a throwaway Debian VM before using them on a real machine.
@@ -135,11 +143,10 @@ Test full runs in a throwaway Debian VM before using them on a real machine.
 | Problem                                         | Fix                                                          |
 | :---------------------------------------------- | :----------------------------------------------------------- |
 | A step prints `failed with exit code`           | Read the error above it, fix the cause, and rerun that step. |
-| Step 13 cannot find `configs/.gitignore_global` | Add a `.gitignore_global` file to `configs/`.                |
+| Step 9 cannot find `configs/.gitignore_global`  | Add a `.gitignore_global` file to `configs/`.                |
 
 ## Roadmap
 
-* Turn the commented out config copies in step 6 back on.
 * Move more of the manual steps into the script.
 
 ## License
