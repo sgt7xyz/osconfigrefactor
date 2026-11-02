@@ -71,7 +71,8 @@ runs with `set -euo pipefail`.
 ### package_install.txt and package_remove.txt
 
 **Purpose:** Package lists, one name per line. The install list covers command line tools, Neovim,
-rofi for Wayland, display tools, and the GNOME keyring. The remove list holds `aisleriot`.
+rofi for Wayland, display tools, the GNOME keyring, and the packages behind the default Sway
+wallpaper. The remove list holds `aisleriot`.
 
 **Depends on:** Nothing.
 
@@ -328,8 +329,8 @@ All other functions live in `fedora-tiling-functions.sh` and take no arguments.
 
 ### speed_up_boot_time
 
-* **Does:** Backs up `/etc/default/grub`, changes `GRUB_TIMEOUT=5` to `2`, and regenerates
-  `/boot/grub2/grub.cfg`.
+* **Does:** Backs up `/etc/default/grub`, sets `GRUB_TIMEOUT` to `2` whatever its old value, and
+  regenerates `/boot/grub2/grub.cfg`.
 * **Inputs:** `/etc/default/grub`.
 * **Outputs:** A shorter boot menu delay.
 * **Why it exists:** Speeds up boot while leaving time to pick a kernel.
@@ -378,6 +379,7 @@ All other functions live in `fedora-tiling-functions.sh` and take no arguments.
 
 | Date       | Summary                                                                                                               |
 | :--------- | :-------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-01 | Set GRUB to 2 seconds from any old value and added the packages the default Sway wallpaper needs.                     |
 | 2026-11-01 | Enabled RPM Fusion for codecs and VLC, fixed package names, installed rofi, and fixed the laptop panel.               |
 | 2026-11-01 | Locked firewalld to deny all inbound, verified the font checksum, and listed failed packages at the end.              |
 | 2026-11-01 | Added a ShellCheck workflow with a pinned, checksum verified release and checkout SHA.                                |

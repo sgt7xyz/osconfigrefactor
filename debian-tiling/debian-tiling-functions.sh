@@ -100,37 +100,50 @@ configure_console() {
 
 # 5. Copy wallpapers to ~/Pictures/wallpapers.
 copy_wallpapers() {
+    mkdir -p ~/Pictures/wallpapers
     cp ./wallpapers/* ~/Pictures/wallpapers/
-    echo 'Wallpaper copied successfully!'
+    echo 'Wallpapers copied successfully!'
+}
+
+# Copies one config file into place. An existing file that differs is copied to ~/.config-backups
+# first, so a hand edited config is never overwritten without a copy.
+install_config() {
+    local source="$1"
+    local target="$2"
+    mkdir -p "$(dirname "$target")"
+    if [ -f "$target" ] && ! cmp -s "$source" "$target"; then
+        local stamp backup
+        stamp="$(date +%Y%m%d%H%M%S)"
+        backup=~/.config-backups/"${target#"$HOME"/}.$stamp"
+        mkdir -p "$(dirname "$backup")"
+        cp -p "$target" "$backup"
+        echo "Backed up $target to $backup"
+    fi
+    cp "$source" "$target"
 }
 
 # 6. Customize tiling settings.
-# NOTE: Most config copies below are commented out, so only alacritty and the volume scripts are installed.
+# Installs the i3, polybar, rofi, picom, and alacritty configs plus the volume helpers.
+# NOTE: .Xresources, .xsessionrc, and xorg.conf.new are tuned for one monitor setup, so they are
+# left for the user to copy by hand.
 customize_tiling() {
-    #local dirs=(~/.config/i3/themes ~/.config/alacritty  ~/.config/polybar  ~/.config/rofi) 
-    #for dir in "${dirs[@]}"; do
-    #   [ -d "$dir" ] || mkdir -p "$dir"
-    #done
-    #echo 'Tiling Specific Directories created successfully!'
-    
-    #cp configs/picom.conf ~/.config/picom.conf
-    #cp configs/i3config ~/.config/i3/config
-    mkdir -p ~/.config/alacritty ~/scripts
-    cp configs/alacritty/alacritty.yml ~/.config/alacritty/alacritty.yml
-    #cp configs/alacritty/catppuccin-macchiato.yml ~/.config/alacritty/catppuccin-macchiato.yml
-    #cp configs/polybar/config.ini ~/.config/polybar/config.ini
-    #cp configs/polybar/launch.sh ~/.config/polybar/launch.sh
-    #cp configs/rofi/config.rasi ~/.config/rofi/config.rasi
-    #cp configs/rofi/catppuccin-macchiato.rasi ~/.config/rofi/catppuccin-macchiato.rasi
-    cp scripts/volume-down.sh ~/scripts/volume-down.sh
-    cp scripts/volume-up.sh ~/scripts/volume-up.sh
-    
-    #echo "" > ~/.Xresources
-    #echo "" >> ~/.Xresources
-    #echo "" >> ~/.Xresources
-    echo 'tiling setup successfully!'
-    # Set up scaling for 4k monitor if you manually start your X session with startx. If you use a display manager change it to .xprofile.
-    #echo 'xrandr --output HDMI-A-0 --primary --mode 3840x2160 --fb 9000x5760 --rotate normal --scale .8x.8 --panning 5760x3240+0+0' > ~/.xinitrc
+    install_config configs/i3config ~/.config/i3/config
+    install_config configs/polybar/config.ini ~/.config/polybar/config.ini
+    install_config configs/polybar/launch.sh ~/.config/polybar/launch.sh
+    # i3 runs the launcher directly, so it must be executable even if an old copy was not.
+    chmod +x ~/.config/polybar/launch.sh
+    install_config configs/rofi/config.rasi ~/.config/rofi/config.rasi
+    install_config configs/rofi/catppuccin-macchiato.rasi ~/.config/rofi/catppuccin-macchiato.rasi
+    install_config configs/picom.conf ~/.config/picom.conf
+    # Alacritty 0.13 and newer (Debian 13) reads only TOML. Older releases (Debian 12) read only YAML.
+    # Both are installed so either version finds its config and ignores the other.
+    local file
+    for file in alacritty.toml catppuccin-macchiato.toml alacritty.yml catppuccin-macchiato.yml; do
+        install_config "configs/alacritty/$file" ~/.config/alacritty/"$file"
+    done
+    install_config scripts/volume-down.sh ~/scripts/volume-down.sh
+    install_config scripts/volume-up.sh ~/scripts/volume-up.sh
+    echo 'Tiling configs installed. Press Mod+Shift+r in i3 to reload them.'
 }
 
 # 7. Customize vimrc file settings.
@@ -152,7 +165,7 @@ VIMRC
 install_vlc_restricted_extras() {
     sudo apt-get -y install vlc vlc-plugin-samba vlc-plugin-video-splitter
     sudo apt-get -y install libavcodec-extra gstreamer1.0-libav gstreamer1.0-plugins-ugly gstreamer1.0-vaapi
-    echo 'VLC installed and successfully!'
+    echo 'VLC installed successfully!'
 }
 
 # 9. Install UFW and enable it.
@@ -182,8 +195,8 @@ install_ufw_enable() {
 # A value of 10 keeps more of the desktop in RAM instead of swapping it out early.
 configure_swappiness() {
     echo 'swappiness before configuration:'
-    sudo cat /proc/sys/vm/swappiness
-    sudo /bin/su -c "echo 'vm.swappiness = 10' > /etc/sysctl.d/swappiness.conf"
+    cat /proc/sys/vm/swappiness
+    echo 'vm.swappiness = 10' | sudo tee /etc/sysctl.d/swappiness.conf > /dev/null
     sudo sysctl -f /etc/sysctl.d/swappiness.conf
     echo 'swappiness after configuration:'
     sysctl vm.swappiness
@@ -191,9 +204,10 @@ configure_swappiness() {
 
 # 11. Speed up boot time.
 # Backs up the GRUB config once, so a rerun cannot replace the original with an edited copy.
+# Two seconds keeps the menu reachable for an older kernel or recovery mode.
 speed_boot_time() {
     [ -f /etc/default/grub.original ] || sudo cp -p /etc/default/grub /etc/default/grub.original
-    sudo sed -i 's/GRUB_TIMEOUT=5/GRUB_TIMEOUT=0/g' /etc/default/grub
+    sudo sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/' /etc/default/grub
     sudo update-grub
     sudo grep GRUB_TIMEOUT /etc/default/grub
     echo 'Boot time speed configured successfully!'
@@ -207,7 +221,7 @@ prep_for_vscode_install() {
     sudo install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
     sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
     rm -f packages.microsoft.gpg
-    echo 'VSScode configured for installation successfully!'
+    echo 'VSCode repository configured successfully!'
 }
 
 # Runs after the repository is added, so apt can see the code package.
@@ -215,12 +229,16 @@ install_vscode() {
     sudo apt-get -y install apt-transport-https
     sudo apt-get update
     sudo apt-get -y install code
-    echo 'VSScode installed successfully!'
+    echo 'VSCode installed successfully!'
 }
 
 # 13. Configure Git.
 configure_git() {
-    cp configs/.gitignore_global ~/
+    if [ -f configs/.gitignore_global ]; then
+        cp configs/.gitignore_global ~/
+    else
+        echo 'Warning: configs/.gitignore_global not found!' >&2
+    fi
     git config --global init.defaultBranch main
     git config --global color.ui auto
     git config --global core.editor vim

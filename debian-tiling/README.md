@@ -29,7 +29,7 @@ debian-tiling-setup.sh --> debian-tiling-functions.sh --> apt, curl, ufw, git
 
 | Requirement                       | Version                |
 | :-------------------------------- | :--------------------- |
-| Debian minimal or netinst install | 12 (bookworm) or newer |
+| Debian minimal or netinst install | 13 (trixie) or newer   |
 | Bash                              | 5.0 or newer           |
 | A user with `sudo` rights         | Not applicable         |
 | Internet access                   | Not applicable         |
@@ -74,7 +74,7 @@ This project reads no environment variables. Behavior is controlled by the files
 
 ## Usage
 
-Run `./debian-tiling-setup.sh` and pick a step by number. Choose **15** to run every step in order.
+Run `./debian-tiling-setup.sh` and pick a step by number. Choose **14** to run every step in order.
 
 | Option | Step                                                 |
 | -----: | :--------------------------------------------------- |
@@ -91,7 +91,7 @@ Run `./debian-tiling-setup.sh` and pick a step by number. Choose **15** to run e
 |     11 | Speed up boot time                                   |
 |     12 | Prep and install VSCode                              |
 |     13 | Configure Git                                        |
-|     15 | Execute all                                          |
+|     14 | Execute all                                          |
 |      0 | Exit                                                 |
 
 ## Project structure
@@ -141,7 +141,6 @@ Test full runs in a throwaway Debian VM before using them on a real machine.
 
 ## Roadmap
 
-* Turn the commented out config copies in step 6 back on.
 * Move more of the manual steps into the script.
 
 ## License

@@ -51,7 +51,7 @@ while true; do
     echo '11. Speed up boot time'
     echo '12. Prep and install VSCode'
     echo '13. Configure Git'
-    echo '15. Execute all'
+    echo '14. Execute all'
     echo '0. Exit'
     echo -n 'Enter the number of your choice: '
     read -r choice
@@ -111,7 +111,7 @@ while true; do
             run_step configure_git
             ;;
 
-        15) 
+        14) 
             run_step backup_configs
             run_step update_debian
             run_step install_packages

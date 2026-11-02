@@ -10,7 +10,7 @@ tools, then applies fonts, wallpapers, terminal and Vim settings, a firewall, ke
 tweaks, VSCode, and Git defaults.
 
 Everything is driven from an interactive numbered menu. Each option runs one step, so a single step
-can be rerun on its own. Option 15 runs every step in order. There is no option 14.
+can be rerun on its own. Option 14 runs every step in order.
 
 Two terms used below:
 
@@ -29,12 +29,12 @@ debian-tiling-setup.sh (menu loop)
   └── sources debian-tiling-functions.sh
         ├── apt-get          <-- package_install.txt, package_remove.txt
         ├── curl, unzip      <-- Nerd Fonts release on GitHub
-        ├── cp               <-- wallpapers/, configs/alacritty/, scripts/volume-*.sh
+        ├── cp               <-- wallpapers/, configs/, scripts/volume-*.sh
         ├── cp, git config   <-- configs/.gitignore_global
         └── ufw, sysctl, update-grub, dpkg-reconfigure
 
 configs/i3config ──exec──> picom, feh (wallpaper), polybar/launch.sh
-                 (copied to ~/.config by hand today, see Known limitations)
+                 (installed to ~/.config/i3/config by the tiling step)
 ```
 
 `debian-tiling-vm-prep.sh` is separate. Run it first inside a VirtualBox VM so Guest Additions can
@@ -212,15 +212,25 @@ All other functions live in `debian-tiling-functions.sh` and take no arguments.
 * **Why it exists:** `i3config` sets the wallpaper from this folder with feh.
 * **Side effects:** File writes.
 
+### install_config
+
+* **Does:** Copies one file into place, creating its folder. If a different file is already there,
+  it is first copied to `~/.config-backups` under the same relative path with a timestamp.
+* **Inputs:** A source path in the repository and a target path in the home directory.
+* **Outputs:** The installed file, plus a backup when one was needed.
+* **Why it exists:** Rerunning the tiling step must not silently destroy a hand edited config.
+* **Side effects:** File writes.
+
 ### customize_tiling
 
-* **Does:** Creates `~/.config/alacritty` and `~/scripts` if needed, then copies
-  `configs/alacritty/alacritty.yml` and the two volume scripts into them.
+* **Does:** Installs the i3, polybar, rofi, picom, and alacritty configs and the two volume helpers
+  through `install_config`, and makes the polybar launcher executable.
 * **Inputs:** Files under `configs/` and `scripts/`.
-* **Outputs:** Three copied files.
-* **Why it exists:** Installs the terminal config and the volume helpers.
-* **Side effects:** File writes. The copies for i3, polybar, rofi, picom, and X settings are
-  commented out in the function, so those configs are not installed.
+* **Outputs:** Thirteen installed files under `~/.config` and `~/scripts`.
+* **Why it exists:** Installs the whole desktop configuration in one step.
+* **Side effects:** File writes, with backups of changed files. Alacritty gets both the TOML files
+  for 0.13 and newer and the YAML files for older releases. `.Xresources`, `.xsessionrc`, and
+  `xorg.conf.new` are tuned for one monitor setup and are not installed.
 
 ### configure_vimrc
 
@@ -261,10 +271,11 @@ All other functions live in `debian-tiling-functions.sh` and take no arguments.
 
 ### speed_boot_time
 
-* **Does:** Backs up `/etc/default/grub`, changes `GRUB_TIMEOUT=5` to `0`, and runs `update-grub`.
+* **Does:** Backs up `/etc/default/grub`, sets `GRUB_TIMEOUT` to `2` whatever its old value, and
+  runs `update-grub`.
 * **Inputs:** `/etc/default/grub`.
-* **Outputs:** No GRUB menu delay at boot.
-* **Why it exists:** Removes the boot wait on single boot machines.
+* **Outputs:** A two second GRUB menu delay.
+* **Why it exists:** Speeds up boot while leaving time to pick an older kernel or recovery mode.
 * **Side effects:** Boot configuration change. The backup is only made once.
 
 ### prep_for_vscode_install
@@ -296,10 +307,10 @@ All other functions live in `debian-tiling-functions.sh` and take no arguments.
 
 * **Failures stop a step, not the run.** In option 15 a failed step prints an error and the next
   step still runs. Scroll back to check for `failed with exit code` lines.
-* **Most configs are not installed.** i3, polybar, rofi, picom, and X configs must be copied or
-  stowed by hand. The function still contains the commented out copy lines.
-* **Old Alacritty format.** The function copies `alacritty.yml`. Alacritty 0.13 and newer reads only
-  `alacritty.toml`, which is also in `configs/alacritty/`.
+* **X settings are not installed.** `.Xresources`, `.xsessionrc`, and `xorg.conf.new` must be
+  copied by hand, because they hold one specific monitor layout.
+* **Debian 12 lacks fastfetch.** On Debian 12 the package step lists `fastfetch` as failed, because
+  it is only in the Debian 13 archive.
 * **Mixed audio tools.** The volume scripts use `wpctl`, but the media key bindings in `i3config`
   use `pactl`.
 * **Unused helper.** `scripts/system-update.sh` is not copied anywhere by the setup script.
@@ -308,6 +319,7 @@ All other functions live in `debian-tiling-functions.sh` and take no arguments.
 
 | Date       | Summary                                                                                                    |
 | :--------- | :--------------------------------------------------------------------------------------------------------- |
+| 2026-11-01 | Installed all desktop configs, fixed the menu numbering, package names, typos, and a 2 second GRUB delay.  |
 | 2026-11-01 | Locked UFW to deny all inbound, verified the font checksum, and listed failed packages at the end.         |
 | 2026-11-01 | Added a ShellCheck workflow with a pinned, checksum verified release and checkout SHA.                     |
 | 2026-11-01 | Added strict mode with per step error handling and fixed the font step, alacritty folder, and GRUB backup. |

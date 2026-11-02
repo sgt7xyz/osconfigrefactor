@@ -3,10 +3,12 @@ bat
 bzip2
 cmatrix
 curl
+desktop-backgrounds-compat
 fastfetch
 git
 gnome-keyring
 htop
+jxl-pixbuf-loader
 liberation-fonts
 libsecret
 llvm
@@ -19,6 +21,7 @@ pavucontrol
 ranger
 rofi-wayland
 seahorse
+swaybg
 tcpdump
 tmux
 unzip

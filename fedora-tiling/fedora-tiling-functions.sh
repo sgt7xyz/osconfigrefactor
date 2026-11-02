@@ -296,7 +296,7 @@ install_firewalld_enable() {
 configure_swappiness() {
     echo 'Swappiness before configuration:'
     cat /proc/sys/vm/swappiness
-    sudo /bin/su -c "echo 'vm.swappiness = 10' > /etc/sysctl.d/swappiness.conf"
+    echo 'vm.swappiness = 10' | sudo tee /etc/sysctl.d/swappiness.conf > /dev/null
     sudo sysctl -f /etc/sysctl.d/swappiness.conf
     echo 'Swappiness after configuration:'
     sysctl vm.swappiness
@@ -305,9 +305,10 @@ configure_swappiness() {
 
 # 20. Speed up boot time.
 # Backs up the GRUB config once, so a rerun cannot replace the original with an edited copy.
+# Two seconds keeps the menu reachable for an older kernel or recovery mode.
 speed_up_boot_time() {
     [ -f /etc/default/grub.original ] || sudo cp -p /etc/default/grub /etc/default/grub.original
-    sudo sed -i 's/GRUB_TIMEOUT=5/GRUB_TIMEOUT=2/g' /etc/default/grub
+    sudo sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/' /etc/default/grub
     # Fedora has no update-grub wrapper, so the config is regenerated directly.
     sudo grub2-mkconfig -o /boot/grub2/grub.cfg
     sudo grep GRUB_TIMEOUT /etc/default/grub
