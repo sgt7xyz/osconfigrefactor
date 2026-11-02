@@ -16,7 +16,10 @@ output DP-4 scale 1.5
 
 #My laptop monitor
 #output eDP-1 scale 1.25
-output eDP-1 disable
+# The laptop panel turns off only while the lid is closed. A plain "output eDP-1 disable" would
+# leave a laptop with no external display on a black screen.
+bindswitch --reload --locked lid:on output eDP-1 disable
+bindswitch --reload --locked lid:off output eDP-1 enable
 
 # Home row direction keys, like vim
 set $left h

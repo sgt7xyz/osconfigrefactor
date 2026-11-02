@@ -96,9 +96,25 @@ install_development_tools(){
     echo 'Development tools installed successfully!'
 }
 
+# Enables the RPM Fusion free and nonfree repositories, which carry the full ffmpeg build and the
+# codecs Fedora cannot ship. Release packages that are already installed are skipped on a rerun.
+# SECURITY: The release packages are fetched over HTTPS, as RPM Fusion documents, and they install
+# the RPM Fusion signing keys with gpgcheck on, so every later package from them is verified.
+enable_rpmfusion() {
+    local fedora_version repo
+    fedora_version="$(rpm -E %fedora)"
+    for repo in free nonfree; do
+        if ! rpm -q "rpmfusion-$repo-release" > /dev/null 2>&1; then
+            sudo dnf -y install "https://mirrors.rpmfusion.org/$repo/fedora/rpmfusion-$repo-release-$fedora_version.noarch.rpm"
+        fi
+    done
+    echo 'RPM Fusion repositories enabled.'
+}
+
 # 8. Install codecs.
 # Swaps the patent-limited ffmpeg-free build for full ffmpeg so common video formats play.
 install_codecs() {
+    enable_rpmfusion
     sudo dnf -y swap ffmpeg-free ffmpeg --allowerasing
     echo 'Codecs installed successfully!'
 }
@@ -146,46 +162,34 @@ copy_wallpapers() {
     fi
 }
 
+# Copies one config file into place. An existing file that differs is copied to ~/.config-backups
+# first, so a hand edited config is never overwritten without a copy.
+install_config() {
+    local source="$1"
+    local target="$2"
+    mkdir -p "$(dirname "$target")"
+    if [ -f "$target" ] && ! cmp -s "$source" "$target"; then
+        local stamp backup
+        stamp="$(date +%Y%m%d%H%M%S)"
+        backup=~/.config-backups/"${target#"$HOME"/}.$stamp"
+        mkdir -p "$(dirname "$backup")"
+        cp -p "$target" "$backup"
+        echo "Backed up $target to $backup"
+    fi
+    cp "$source" "$target"
+}
+
 # 12. Customize tiling settings.
+# Installs the Sway, foot, and rofi configs plus the volume helpers. There is no waybar config yet,
+# so Sway keeps the bar from Fedora's own /usr/share/sway/config.d files.
 customize_tiling() {
-    # Sway and foot are the active setup. Only their configs are copied for now.
-    local dirs=(~/.config/sway ~/.config/foot ~/.config/alacritty ~/.config/waybar ~/.config/rofi) 
-    for dir in "${dirs[@]}"; do
-       [ -d "$dir" ] || mkdir -p "$dir"
-    done
-    echo 'Tiling Specific Directories created successfully!'
-     
-    cp configs/sway/config ~/.config/sway/config
-    cp configs/foot/foot.ini ~/.config/foot/foot.ini
-    
-    #cp configs/alacritty/catppuccin-macchiato.yml ~/.config/alacritty/catppuccin-macchiato.yml
-    #cp configs/polybar/config.ini ~/.config/polybar/config.ini
-    #cp configs/polybar/launch.sh ~/.config/polybar/launch.sh
-    #cp configs/rofi/config.rasi ~/.config/rofi/config.rasi
-    #cp configs/rofi/catppuccin-macchiato.rasi ~/.config/rofi/catppuccin-macchiato.rasi
-
-    
-
-    # NOTE: The i3 block below is kept as a reference for an X11 setup and is not used by Sway.
-    #local dirs=(~/.config/i3/themes ~/.config/alacritty  ~/.config/polybar  ~/.config/rofi) 
-    #for dir in "${dirs[@]}"; do
-    #   [ -d "$dir" ] || mkdir -p "$dir"
-    #done
-    #echo 'Tiling Specific Directories created successfully!'
-    
-    #cp configs/picom.conf ~/.config/picom.conf
-    #cp configs/i3config ~/.config/i3/config
-    #cp configs/alacritty/alacritty.yml ~/.config/alacritty/alacritty.yml
-    #cp configs/alacritty/catppuccin-macchiato.yml ~/.config/alacritty/catppuccin-macchiato.yml
-    #cp configs/polybar/config.ini ~/.config/polybar/config.ini
-    #cp configs/polybar/launch.sh ~/.config/polybar/launch.sh
-    #cp configs/rofi/config.rasi ~/.config/rofi/config.rasi
-    #cp configs/rofi/catppuccin-macchiato.rasi ~/.config/rofi/catppuccin-macchiato.rasi
-
-    # Set up scaling for 4k monitor if you manually start your X session with startx
-    #echo 'xrandr --output HDMI-A-0 --primary --mode 3840x2160 --fb 9000x5760 --rotate normal --scale .8x.8 --panning 5760x3240+0+0' > ~/.xinitrc
-    
-    echo 'Tiling setup completed (placeholder - customize as needed)!'
+    install_config configs/sway/config ~/.config/sway/config
+    install_config configs/foot/foot.ini ~/.config/foot/foot.ini
+    install_config configs/rofi/config.rasi ~/.config/rofi/config.rasi
+    install_config configs/rofi/catppuccin-macchiato.rasi ~/.config/rofi/catppuccin-macchiato.rasi
+    install_config scripts/volume-down.sh ~/scripts/volume-down.sh
+    install_config scripts/volume-up.sh ~/scripts/volume-up.sh
+    echo 'Tiling configs installed. Press Mod+Shift+c in Sway to reload them.'
 }
 
 # 13. Customize vimrc file settings.
@@ -203,14 +207,13 @@ VIMRC
 }
 
 # 14. Install VLC, plugins, and restricted extras.
+# The freeworld and ugly packages come from RPM Fusion, so install_codecs enables it and swaps in
+# full ffmpeg first.
 install_vlc_restricted_extras() {
-    # NOTE: The nonfree and ugly plugins come from RPM Fusion. Uncomment these lines if it is not enabled yet.
-    #sudo dnf -y install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
-    #sudo dnf -y install https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
-    
-    sudo dnf -y install vlc vlc-extras
-    sudo dnf -y install gstreamer1-plugins-base gstreamer1-plugins-good gstreamer1-plugins-bad-free gstreamer1-plugins-ugly gstreamer1-plugins-bad-nonfree
-    sudo dnf -y install ffmpeg
+    install_codecs
+    sudo dnf -y install vlc vlc-plugins-freeworld
+    sudo dnf -y install gstreamer1-plugins-base gstreamer1-plugins-good gstreamer1-plugins-bad-free \
+        gstreamer1-plugins-ugly gstreamer1-plugins-bad-freeworld gstreamer1-plugin-libav
     echo 'VLC and multimedia codecs installed successfully!'
 }
 
@@ -334,8 +337,7 @@ install_docker() {
     sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
     echo 'Docker installed successfully!'
 
-    sudo systemctl enable docker
-    sudo systemctl start docker
+    sudo systemctl enable --now docker
 
     # SECURITY: Docker group membership is root equivalent on this host.
     sudo usermod -aG docker "$USER"
@@ -344,9 +346,8 @@ install_docker() {
 
 # 22. Install VirtualBox.
 install_virtualbox() {
-
-    # Kernel headers and DKMS are needed to build the VirtualBox kernel modules.
-    sudo dnf -y install @development-tools
+    # Compilers, kernel headers, and DKMS are needed to build the VirtualBox kernel modules.
+    install_development_tools
     sudo dnf -y install kernel-headers kernel-devel dkms
 
     # SECURITY: Oracle's key lets dnf verify VirtualBox packages and repository metadata.
@@ -362,9 +363,8 @@ gpgcheck=1
 repo_gpgcheck=1
 gpgkey=https://www.virtualbox.org/download/oracle_vbox_2016.asc
 EOF'
- 
-    echo 'VirtualBox Fedora repository added successfully.'    
-    
+    echo 'VirtualBox Fedora repository added successfully.'
+
     sudo dnf -y install VirtualBox-7.1
     echo 'VirtualBox installed successfully!'
 

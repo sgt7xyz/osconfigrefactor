@@ -80,9 +80,10 @@ rofi for Wayland, display tools, and the GNOME keyring. The remove list holds `a
 **Purpose:** Desktop configuration files.
 
 * `sway/config` is the Sway config. It sets keys and outputs, exports the Wayland environment to
-  systemd, and starts the GNOME keyring daemon for secrets and SSH keys.
+  systemd, and starts the GNOME keyring daemon for secrets and SSH keys. The laptop panel `eDP-1`
+  turns off only while the lid is closed.
 * `foot/foot.ini` is the terminal config.
-* `rofi/` holds the launcher config and its Catppuccin Macchiato theme. It is not copied yet.
+* `rofi/` holds the launcher config and its Catppuccin Macchiato theme, set to open `foot`.
 * `waybar/` is an empty placeholder kept with a `.keep` file.
 * `.gitignore_global` holds global Git ignore patterns.
 
@@ -93,7 +94,8 @@ rofi for Wayland, display tools, and the GNOME keyring. The remove list holds `a
 **Purpose:** `volume-up.sh` and `volume-down.sh` change the default audio sink by 5 percent with
 `wpctl`, capped at 150 percent. Both run with `set -euo pipefail`.
 
-**Depends on:** `wpctl` from WirePlumber. Nothing copies or binds these scripts yet.
+**Depends on:** `wpctl` from WirePlumber. The tiling step copies them to `~/scripts`, but no key
+binding calls them yet.
 
 ### fixed.txt
 
@@ -192,14 +194,23 @@ All other functions live in `fedora-tiling-functions.sh` and take no arguments.
 * **Why it exists:** Needed to build software and kernel modules.
 * **Side effects:** System package changes.
 
+### enable_rpmfusion
+
+* **Does:** Installs the RPM Fusion free and nonfree release packages for the running Fedora
+  version, skipping any that are already installed.
+* **Inputs:** The Fedora version from `rpm -E %fedora`.
+* **Outputs:** Two enabled repositories with their signing keys and `gpgcheck` on.
+* **Why it exists:** Full `ffmpeg` and the restricted GStreamer plugins are only in RPM Fusion.
+  It is called by the codec and VLC steps rather than having its own menu option.
+* **Side effects:** Network calls and new repository files under `/etc/yum.repos.d`.
+
 ### install_codecs
 
-* **Does:** Swaps `ffmpeg-free` for the full `ffmpeg` build.
+* **Does:** Enables RPM Fusion, then swaps `ffmpeg-free` for the full `ffmpeg` build.
 * **Inputs:** None.
 * **Outputs:** Full ffmpeg codec support.
 * **Why it exists:** `ffmpeg-free` leaves out patent limited formats.
-* **Side effects:** System package changes. Full `ffmpeg` normally comes from RPM Fusion, which
-  is not enabled, so this step is likely to fail on a stock install.
+* **Side effects:** System package changes. Safe to rerun.
 
 ### create_directories
 
@@ -230,15 +241,24 @@ All other functions live in `fedora-tiling-functions.sh` and take no arguments.
 * **Why it exists:** Makes the wallpapers available to the Sway config.
 * **Side effects:** File writes.
 
+### install_config
+
+* **Does:** Copies one file into place, creating its folder. If a different file is already there,
+  it is first copied to `~/.config-backups` under the same relative path with a timestamp.
+* **Inputs:** A source path in the repository and a target path in the home directory.
+* **Outputs:** The installed file, plus a backup when one was needed.
+* **Why it exists:** Rerunning the tiling step must not silently destroy a hand edited config.
+* **Side effects:** File writes.
+
 ### customize_tiling
 
-* **Does:** Creates config folders for Sway, foot, alacritty, waybar, and rofi, then copies the
-  Sway and foot configs into place.
-* **Inputs:** `configs/sway/config` and `configs/foot/foot.ini`.
-* **Outputs:** Two installed config files and five folders.
+* **Does:** Installs the Sway, foot, and rofi configs, the rofi theme, and the two volume helpers
+  through `install_config`.
+* **Inputs:** `configs/sway/`, `configs/foot/`, `configs/rofi/`, and `scripts/`.
+* **Outputs:** Six installed files.
 * **Why it exists:** Installs the active desktop configuration.
-* **Side effects:** Overwrites any existing Sway and foot configs. The rest of the function is
-  commented out i3, polybar, and rofi copy lines kept for reference.
+* **Side effects:** File writes, with backups of changed files. There is no waybar config yet, so
+  Sway keeps the bar from Fedora's own `/usr/share/sway/config.d` files.
 
 ### configure_vimrc
 
@@ -251,13 +271,12 @@ All other functions live in `fedora-tiling-functions.sh` and take no arguments.
 
 ### install_vlc_restricted_extras
 
-* **Does:** Installs VLC, `vlc-extras`, the GStreamer plugin sets including ugly and bad nonfree,
-  and `ffmpeg`.
+* **Does:** Runs `install_codecs`, then installs VLC with the RPM Fusion `vlc-plugins-freeworld`
+  codecs and the GStreamer plugin sets, including ugly, bad freeworld, and libav.
 * **Inputs:** None.
 * **Outputs:** Installed packages.
 * **Why it exists:** Adds a media player and full codec support.
-* **Side effects:** System package changes. The ugly, nonfree, and full ffmpeg packages need RPM
-  Fusion, and the lines that enable it are commented out.
+* **Side effects:** System package changes and RPM Fusion repositories.
 
 ### install_vscode
 
@@ -329,9 +348,9 @@ All other functions live in `fedora-tiling-functions.sh` and take no arguments.
 
 ### install_virtualbox
 
-* **Does:** Installs build tools, kernel headers, and DKMS, imports Oracle's signing key, writes
-  `/etc/yum.repos.d/virtualbox.repo` with an HTTPS `baseurl`, installs VirtualBox 7.1, and adds
-  the user to `vboxusers`.
+* **Does:** Calls `install_development_tools`, installs kernel headers and DKMS, imports Oracle's
+  signing key, writes `/etc/yum.repos.d/virtualbox.repo` with an HTTPS `baseurl`, installs
+  VirtualBox 7.1, and adds the user to `vboxusers`.
 * **Inputs:** `$USER`.
 * **Outputs:** VirtualBox installed.
 * **Why it exists:** VirtualBox needs kernel modules built for the running kernel.
@@ -350,17 +369,16 @@ All other functions live in `fedora-tiling-functions.sh` and take no arguments.
 * **Owner's fix list.** `fixed.txt` flags steps 12, 14, 17, and 21 as needing work.
 * **Failures stop a step, not the run.** In option 23 a failed step prints an error and the next
   step still runs. Scroll back to check for `failed with exit code` lines.
-* **Codecs need RPM Fusion.** Steps 8 and 14 install packages that normally come only from RPM
-  Fusion, and nothing enables it, so on a stock install those steps report a failure.
 * **dnf5 only.** `install_docker` and `install_brave_browsers` use the dnf5 `addrepo` syntax, which
   matches the Fedora 41 or newer requirement in the README.
-* **Unused helpers.** The volume scripts, rofi configs, and `install_brave_browsers` are not wired
-  into the setup.
+* **Unused helpers.** `install_brave_browsers` is not wired into the menu, and no key binding calls
+  the volume scripts.
 
 ## Change log
 
 | Date       | Summary                                                                                                               |
 | :--------- | :-------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-01 | Enabled RPM Fusion for codecs and VLC, fixed package names, installed rofi, and fixed the laptop panel.               |
 | 2026-11-01 | Locked firewalld to deny all inbound, verified the font checksum, and listed failed packages at the end.              |
 | 2026-11-01 | Added a ShellCheck workflow with a pinned, checksum verified release and checkout SHA.                                |
 | 2026-11-01 | Added strict mode with per step error handling and fixed the VM prep, Docker repo, VirtualBox repo, and dnf settings. |
