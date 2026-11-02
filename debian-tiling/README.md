@@ -17,13 +17,13 @@ automated. Fork it and adjust the package lists and configs to your taste.
 ## Architecture
 
 `debian-tiling-setup.sh` builds a grouped, numbered menu from one ordered list of steps and calls
-functions from `debian-tiling-functions.sh`. Package lists and dotfiles are read from the repository
-at run time.
+functions from `common-functions.sh` and `debian-tiling-functions.sh`. Package lists and dotfiles
+are read from the repository at run time.
 
 ```text
-debian-tiling-setup.sh --> debian-tiling-functions.sh --> apt, curl, ufw, git
-                                     |
-                                     +--> package_install.txt, package_remove.txt, configs/, scripts/, wallpapers/
+debian-tiling-setup.sh --> common-functions.sh + debian-tiling-functions.sh --> apt, curl, ufw, git
+                                                           |
+                                                           +--> package_install.txt, package_remove.txt, configs/, scripts/, wallpapers/
 ```
 
 ## Prerequisites
@@ -104,7 +104,8 @@ fedora-tiling, so the same number means the same step on both systems.
 ```text
 .
 ├── debian-tiling-setup.sh       # Entry point and menu
-├── debian-tiling-functions.sh   # One function per setup step
+├── common-functions.sh          # Menu engine and steps shared with fedora-tiling
+├── debian-tiling-functions.sh   # Debian specific setup steps
 ├── debian-tiling-vm-prep.sh     # Optional VirtualBox guest prep
 ├── package_install.txt          # Packages to install
 ├── package_remove.txt           # Packages to purge
@@ -132,7 +133,7 @@ fedora-tiling, so the same number means the same step on both systems.
 There are no automated tests. Lint the scripts with ShellCheck, which also runs in CI on every push.
 
 ```bash
-shellcheck -x debian-tiling-setup.sh debian-tiling-functions.sh debian-tiling-vm-prep.sh scripts/*.sh
+shellcheck -x debian-tiling-setup.sh common-functions.sh debian-tiling-functions.sh debian-tiling-vm-prep.sh scripts/*.sh
 ```
 
 Test full runs in a throwaway Debian VM before using them on a real machine.

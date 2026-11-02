@@ -7,16 +7,6 @@
 # Author:   sgt7 LLC
 # ---------------------------------------------------------------
 
-# 1. Backup configs.
-# Keeps copies of the stock shell dotfiles before later steps change them.
-backup_configs() {
-  mkdir -p ~/.config-backups
-  cp ~/.bashrc ~/.config-backups 2>/dev/null || echo "Warning: ~/.bashrc not found"
-  cp ~/.bash_profile ~/.config-backups 2>/dev/null || echo "Warning: ~/.bash_profile not found"
-  cp ~/.bash_logout ~/.config-backups 2>/dev/null || echo "Warning: ~/.bash_logout not found"
-  echo 'Config files backed up successfully!'
-}
-
 # 2. Update DNF for faster downloads.
 # Parallel downloads and the fastest mirror cut the time of every later dnf step.
 # The backup is taken once and each line is only added once, so the step is safe to rerun.
@@ -43,30 +33,6 @@ update_firmware() {
     sudo fwupdmgr get-updates || echo 'No firmware updates available.'
     sudo fwupdmgr update || echo 'No firmware updates applied.'
     echo 'Firmware update completed!'
-}
-
-# 5. Install and remove packages.
-# Runs a package command once per name in a list file. A bad name does not stop the rest, but every
-# failure is listed at the end and the step returns non-zero so run_step reports it.
-apply_package_list() {
-    local list_file="$1"
-    shift
-    if [ ! -f "$list_file" ]; then
-        echo "Error: $list_file not found." >&2
-        return 1
-    fi
-    local package
-    local failed=()
-    # The list is read on fd 3 so a package tool that reads stdin cannot swallow the remaining names.
-    # The -n test also reads a last line that has no trailing newline. Blank and # lines are skipped.
-    while read -r package <&3 || [ -n "$package" ]; do
-        [[ -z "$package" || "$package" == \#* ]] && continue
-        "$@" "$package" || failed+=("$package")
-    done 3< "$list_file"
-    if (( ${#failed[@]} > 0 )); then
-        echo "Failed for these packages in $list_file: ${failed[*]}" >&2
-        return 1
-    fi
 }
 
 # Package names live in package_install.txt so the list can change without editing code.
@@ -119,66 +85,6 @@ install_codecs() {
     echo 'Codecs installed successfully!'
 }
 
-# 9. Create custom directories in the home directory.
-create_directories() {
-    local dirs=(~/dotfiles ~/.local/share/themes ~/.local/share/fonts ~/.local/share/icons ~/software ~/scripts ~/Pictures/wallpapers)
-    for dir in "${dirs[@]}"; do
-        [ -d "$dir" ] || mkdir -p "$dir"
-    done
-    echo 'Directories created successfully!'
-}
-
-# 10. Install Nerd font.
-# The Nerd Font provides the icon glyphs used by the bar, launcher, and terminal.
-# SECURITY: The archive is checked against the SHA-256 published with the release, so a changed
-# download is rejected before anything is installed.
-install_font() {
-    local font_dir=~/fonttmp
-    local font_url="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/DroidSansMono.zip"
-    local font_sha256="030229341907c833862f00682f0f4bce65d0dc8d281fc9a40d80b7ee9d306e88"
-    # A failed earlier run can leave files behind, so the work folder starts empty.
-    rm -rf "$font_dir"
-    mkdir -p "$font_dir" ~/.local/share/fonts
-    echo 'Downloading and Installing Fonts...'
-    curl -fL "$font_url" -o "$font_dir/DroidSansMonoNerdFont.zip"
-    echo "$font_sha256  $font_dir/DroidSansMonoNerdFont.zip" | sha256sum --check --strict
-    echo "Unzipping the font..."
-    unzip -o "$font_dir/DroidSansMonoNerdFont.zip" -d "$font_dir"
-    cp "$font_dir"/*.otf ~/.local/share/fonts/
-    echo "Refreshing font cache..."
-    fc-cache -f
-    echo "Cleaning up..."
-    rm -rf "$font_dir"
-    echo 'Fonts installed successfully. Ensure you select the font in your terminal etc.'
-}
-
-# 11. Copy wallpapers to ~/Pictures/wallpapers.
-copy_wallpapers() {
-    if [ -d "./wallpapers" ]; then
-        cp ./wallpapers/* ~/Pictures/wallpapers/
-        echo 'Wallpapers copied successfully!'
-    else
-        echo 'Warning: ./wallpapers directory not found!'
-    fi
-}
-
-# Copies one config file into place. An existing file that differs is copied to ~/.config-backups
-# first, so a hand edited config is never overwritten without a copy.
-install_config() {
-    local source="$1"
-    local target="$2"
-    mkdir -p "$(dirname "$target")"
-    if [ -f "$target" ] && ! cmp -s "$source" "$target"; then
-        local stamp backup
-        stamp="$(date +%Y%m%d%H%M%S)"
-        backup=~/.config-backups/"${target#"$HOME"/}.$stamp"
-        mkdir -p "$(dirname "$backup")"
-        cp -p "$target" "$backup"
-        echo "Backed up $target to $backup"
-    fi
-    cp "$source" "$target"
-}
-
 # 12. Customize tiling settings.
 # Installs the Sway, foot, and rofi configs plus the volume helpers. There is no waybar config yet,
 # so Sway keeps the bar from Fedora's own /usr/share/sway/config.d files.
@@ -190,20 +96,6 @@ customize_tiling() {
     install_config scripts/volume-down.sh ~/scripts/volume-down.sh
     install_config scripts/volume-up.sh ~/scripts/volume-up.sh
     echo 'Tiling configs installed. Press Mod+Shift+c in Sway to reload them.'
-}
-
-# 13. Customize vimrc file settings.
-# NOTE: This overwrites any existing ~/.vimrc. The bell settings silence the terminal beep.
-configure_vimrc() {
-    cat > ~/.vimrc <<'VIMRC'
-set noerrorbells
-set visualbell
-set t_vb=
-syntax on
-set number
-set mouse=r
-VIMRC
-    echo 'Vim customized successfully!'
 }
 
 # 14. Install VLC, plugins, and restricted extras.
@@ -242,22 +134,6 @@ install_obs() {
     echo 'OBS Studio installed and configured successfully!'
 }
 
-# 17. Configure Git.
-configure_git() {
-    if [ -f configs/.gitignore_global ]; then
-        cp configs/.gitignore_global ~/
-    else
-        echo 'Warning: configs/.gitignore_global not found!'
-    fi
-    git config --global init.defaultBranch main
-    git config --global color.ui auto
-    git config --global core.editor vim
-    git config --global pull.rebase false
-    git config --global core.excludesfile ~/.gitignore_global
-    git config --global --list
-    echo 'Base configuration for Git completed. Ensure you set your username and email!'
-}
-
 # 18. Install and enable firewalld.
 # SECURITY: A workstation offers no network services, so every inbound connection the host did not
 # start is rejected. firewalld is stateful, so replies to traffic the host started are still let in.
@@ -289,18 +165,6 @@ install_firewalld_enable() {
     sudo firewall-cmd --zone="$zone" --list-all
     # NOTE: A NetworkManager connection with its own zone set ignores the default zone.
     echo "firewalld enabled. Check that every network interface above is in the $zone zone."
-}
-
-# 19. Configure swappiness.
-# A value of 10 keeps more of the desktop in RAM instead of swapping it out early.
-configure_swappiness() {
-    echo 'Swappiness before configuration:'
-    cat /proc/sys/vm/swappiness
-    echo 'vm.swappiness = 10' | sudo tee /etc/sysctl.d/swappiness.conf > /dev/null
-    sudo sysctl -f /etc/sysctl.d/swappiness.conf
-    echo 'Swappiness after configuration:'
-    sysctl vm.swappiness
-    echo 'Swappiness configured successfully!'
 }
 
 # 20. Speed up boot time.

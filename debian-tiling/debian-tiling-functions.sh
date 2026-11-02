@@ -7,44 +7,10 @@
 # Author:   sgt7 LLC
 # ---------------------------------------------------------------
 
-# 1. Backup configs, update, install, and remove packages.
-# Keeps copies of the stock shell dotfiles before later steps or stow can replace them.
-backup_configs() {
-    mkdir -p ~/.config-backups
-    local file
-    for file in ~/.bashrc ~/.profile ~/.bash_logout; do
-        cp "$file" ~/.config-backups/ || echo "Warning: $file not found, skipping." >&2
-    done
-    echo 'Config files backed up successfully!'
-}
-
 update_debian() {
     sudo apt-get -y update
     sudo apt-get -y upgrade
     echo 'System updated successfully!'
-}
-
-# Runs a package command once per name in a list file. A bad name does not stop the rest, but every
-# failure is listed at the end and the step returns non-zero so run_step reports it.
-apply_package_list() {
-    local list_file="$1"
-    shift
-    if [ ! -f "$list_file" ]; then
-        echo "Error: $list_file not found." >&2
-        return 1
-    fi
-    local package
-    local failed=()
-    # The list is read on fd 3 so a package tool that reads stdin cannot swallow the remaining names.
-    # The -n test also reads a last line that has no trailing newline. Blank and # lines are skipped.
-    while read -r package <&3 || [ -n "$package" ]; do
-        [[ -z "$package" || "$package" == \#* ]] && continue
-        "$@" "$package" || failed+=("$package")
-    done 3< "$list_file"
-    if (( ${#failed[@]} > 0 )); then
-        echo "Failed for these packages in $list_file: ${failed[*]}" >&2
-        return 1
-    fi
 }
 
 # Package names live in package_install.txt so the list can change without editing code.
@@ -60,66 +26,9 @@ remove_packages() {
     echo 'Packages removed successfully!'
 }
 
-# 2. Create custom directories in the home directory.
-create_directories() {
-    local dirs=(~/.config ~/dotfiles ~/.local/share/themes ~/.local/share/fonts ~/.local/share/icons ~/software ~/scripts ~/Pictures/wallpapers)
-    for dir in "${dirs[@]}"; do
-        [ -d "$dir" ] || mkdir -p "$dir"
-    done
-    echo 'Directories created successfully!'
-}
-
-# 3. Install fonts.
-# The Nerd Font provides the glyphs that polybar and the terminal theme rely on.
-# SECURITY: The archive is checked against the SHA-256 published with the release, so a changed
-# download is rejected before anything is installed.
-install_font() {
-    local font_dir=~/fonttmp
-    local font_url="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/DroidSansMono.zip"
-    local font_sha256="030229341907c833862f00682f0f4bce65d0dc8d281fc9a40d80b7ee9d306e88"
-    # A failed earlier run can leave files behind, so the work folder starts empty.
-    rm -rf "$font_dir"
-    mkdir -p "$font_dir" ~/.local/share/fonts
-    echo 'Downloading and Installing Fonts...'
-    curl -fL "$font_url" -o "$font_dir/DroidSansMonoNerdFont.zip"
-    echo "$font_sha256  $font_dir/DroidSansMonoNerdFont.zip" | sha256sum --check --strict
-    echo "Unzipping the font..."
-    unzip -o "$font_dir/DroidSansMonoNerdFont.zip" -d "$font_dir"
-    cp "$font_dir"/*.otf ~/.local/share/fonts/
-    echo "Refreshing font cache..."
-    fc-cache -f
-    echo "Cleaning up..."
-    rm -rf "$font_dir"
-    echo 'Fonts installed successfully. Ensure you select the font in your terminal etc.'
-}
-
 # 4. Configure console terminal settings.
 configure_console() {
     sudo dpkg-reconfigure console-setup
-}
-
-# 5. Copy wallpapers to ~/Pictures/wallpapers.
-copy_wallpapers() {
-    mkdir -p ~/Pictures/wallpapers
-    cp ./wallpapers/* ~/Pictures/wallpapers/
-    echo 'Wallpapers copied successfully!'
-}
-
-# Copies one config file into place. An existing file that differs is copied to ~/.config-backups
-# first, so a hand edited config is never overwritten without a copy.
-install_config() {
-    local source="$1"
-    local target="$2"
-    mkdir -p "$(dirname "$target")"
-    if [ -f "$target" ] && ! cmp -s "$source" "$target"; then
-        local stamp backup
-        stamp="$(date +%Y%m%d%H%M%S)"
-        backup=~/.config-backups/"${target#"$HOME"/}.$stamp"
-        mkdir -p "$(dirname "$backup")"
-        cp -p "$target" "$backup"
-        echo "Backed up $target to $backup"
-    fi
-    cp "$source" "$target"
 }
 
 # 6. Customize tiling settings.
@@ -144,20 +53,6 @@ customize_tiling() {
     install_config scripts/volume-down.sh ~/scripts/volume-down.sh
     install_config scripts/volume-up.sh ~/scripts/volume-up.sh
     echo 'Tiling configs installed. Press Mod+Shift+r in i3 to reload them.'
-}
-
-# 7. Customize vimrc file settings.
-# NOTE: This overwrites any existing ~/.vimrc. The bell settings silence the terminal beep.
-configure_vimrc() {
-    cat > ~/.vimrc <<'VIMRC'
-set noerrorbells
-set visualbell
-set t_vb=
-syntax on
-set number
-set mouse=r
-VIMRC
-    echo 'Vim customized successfully!'
 }
 
 # 8. Install VLC, plugins, and restricted extras.
@@ -191,17 +86,6 @@ install_ufw_enable() {
     echo 'UFW enabled. Inbound connections the host did not start are denied.'
 }
 
-# 10. Configure swappiness.
-# A value of 10 keeps more of the desktop in RAM instead of swapping it out early.
-configure_swappiness() {
-    echo 'swappiness before configuration:'
-    cat /proc/sys/vm/swappiness
-    echo 'vm.swappiness = 10' | sudo tee /etc/sysctl.d/swappiness.conf > /dev/null
-    sudo sysctl -f /etc/sysctl.d/swappiness.conf
-    echo 'swappiness after configuration:'
-    sysctl vm.swappiness
-}
-
 # 11. Speed up boot time.
 # Backs up the GRUB config once, so a rerun cannot replace the original with an edited copy.
 # Two seconds keeps the menu reachable for an older kernel or recovery mode.
@@ -230,19 +114,4 @@ install_vscode() {
     sudo apt-get update
     sudo apt-get -y install code
     echo 'VSCode installed successfully!'
-}
-
-# 13. Configure Git.
-configure_git() {
-    if [ -f configs/.gitignore_global ]; then
-        cp configs/.gitignore_global ~/
-    else
-        echo 'Warning: configs/.gitignore_global not found!' >&2
-    fi
-    git config --global init.defaultBranch main
-    git config --global color.ui auto
-    git config --global core.editor vim
-    git config --global pull.rebase false
-    git config --global core.excludesfile ~/.gitignore_global
-    echo 'Base configuration for Git completed. Ensure you set your username and email!'
 }

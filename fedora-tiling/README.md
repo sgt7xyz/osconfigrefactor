@@ -18,13 +18,13 @@ taste.
 ## Architecture
 
 `fedora-tiling-setup.sh` builds a grouped, numbered menu from one ordered list of steps and calls
-functions from `fedora-tiling-functions.sh`. Package lists and dotfiles are read from the repository
-at run time.
+functions from `common-functions.sh` and `fedora-tiling-functions.sh`. Package lists and dotfiles
+are read from the repository at run time.
 
 ```text
-fedora-tiling-setup.sh --> fedora-tiling-functions.sh --> dnf, flatpak, fwupdmgr, firewalld, docker, git
-                                     |
-                                     +--> package_install.txt, package_remove.txt, configs/, wallpapers/
+fedora-tiling-setup.sh --> common-functions.sh + fedora-tiling-functions.sh --> dnf, flatpak, fwupdmgr, firewalld, docker, git
+                                                           |
+                                                           +--> package_install.txt, package_remove.txt, configs/, wallpapers/
 ```
 
 ## Prerequisites
@@ -108,7 +108,8 @@ debian-tiling, so the same number means the same step on both systems.
 ```text
 .
 ├── fedora-tiling-setup.sh       # Entry point and menu
-├── fedora-tiling-functions.sh   # One function per setup step
+├── common-functions.sh          # Menu engine and steps shared with debian-tiling
+├── fedora-tiling-functions.sh   # Fedora specific setup steps
 ├── fedora-tiling-vm-prep.sh     # Optional VirtualBox guest prep
 ├── package_install.txt          # Packages to install
 ├── package_remove.txt           # Packages to remove
@@ -139,7 +140,7 @@ debian-tiling, so the same number means the same step on both systems.
 There are no automated tests. Lint the scripts with ShellCheck, which also runs in CI on every push.
 
 ```bash
-shellcheck -x fedora-tiling-setup.sh fedora-tiling-functions.sh fedora-tiling-vm-prep.sh scripts/*.sh
+shellcheck -x fedora-tiling-setup.sh common-functions.sh fedora-tiling-functions.sh fedora-tiling-vm-prep.sh scripts/*.sh
 ```
 
 Test full runs in a throwaway Fedora VM before using them on a real machine.

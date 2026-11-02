@@ -27,6 +27,7 @@ The functions read data from the repository and write into the home directory or
 
 ```text
 debian-tiling-setup.sh (menu loop)
+  ├── sources common-functions.sh   (menu engine and shared steps)
   └── sources debian-tiling-functions.sh
         ├── apt-get          <-- package_install.txt, package_remove.txt
         ├── curl, unzip      <-- Nerd Fonts release on GitHub
@@ -49,7 +50,7 @@ Read the files in this order.
 
 **Purpose:** Entry point. Holds the ordered list of menu entries and the menu loop that runs them.
 
-**Depends on:** `debian-tiling-functions.sh`.
+**Depends on:** `common-functions.sh`, then `debian-tiling-functions.sh`.
 
 It resolves its own directory with `dirname` and `realpath` so the functions file is always found.
 The `menu` array is the single place that sets step order, numbers, and labels. Option 3 runs the
@@ -58,6 +59,18 @@ install and remove functions together, and option 11 runs both VSCode functions.
 The script runs with `set -euo pipefail` and changes into the repository directory, so the data
 files are found wherever it is started from. Every function call goes through `run_step`, so a
 failing command stops only that step and the menu keeps running.
+
+### common-functions.sh
+
+**Purpose:** The menu engine (`run_step`, `run_entry`, `run_menu`) and every step that works the
+same on Debian and Fedora: backups, directories, the font, wallpapers, Vim, Git, swappiness, and
+the `apply_package_list` and `install_config` helpers. It defines functions only.
+
+**Depends on:** `curl`, `unzip`, `sha256sum`, `fc-cache`, `git`, and `sudo`.
+
+This file is kept byte for byte identical with the copy in fedora-tiling. Change both together, and
+check them from the folder that holds both repositories with
+`diff debian-tiling/common-functions.sh fedora-tiling/common-functions.sh`.
 
 ### debian-tiling-functions.sh
 
@@ -156,13 +169,17 @@ finding fails the job.
   drift apart. The list keeps steps 1 to 14 identical to fedora-tiling.
 * **Side effects:** Reads from the terminal. Input such as `08` is read as decimal.
 
-All other functions live in `debian-tiling-functions.sh` and take no arguments.
+The entries above and the shared steps `backup_configs`, `create_directories`, `install_font`,
+`copy_wallpapers`, `configure_vimrc`, `configure_git`, `configure_swappiness`, `apply_package_list`,
+and `install_config` live in `common-functions.sh`. The rest live in `debian-tiling-functions.sh`.
+Step functions take no arguments.
 
 ### backup_configs
 
-* **Does:** Copies `~/.bashrc`, `~/.profile`, and `~/.bash_logout` into `~/.config-backups`.
-* **Inputs:** Those three files.
-* **Outputs:** A backup directory, with a warning for each file that is missing.
+* **Does:** Copies `~/.bashrc`, `~/.profile`, `~/.bash_profile`, and `~/.bash_logout` into
+  `~/.config-backups`.
+* **Inputs:** Those files. Debian normally has `~/.profile` and Fedora `~/.bash_profile`.
+* **Outputs:** A backup directory, with a note for each file that is missing.
 * **Why it exists:** Keeps the stock dotfiles in case `stow` or a later step replaces them.
 * **Side effects:** File writes. Safe to rerun, but it overwrites the earlier backups.
 
@@ -229,7 +246,8 @@ All other functions live in `debian-tiling-functions.sh` and take no arguments.
 
 ### copy_wallpapers
 
-* **Does:** Copies every file in `wallpapers/` to `~/Pictures/wallpapers/`.
+* **Does:** Copies every file in `wallpapers/` to `~/Pictures/wallpapers/`, or fails the step if
+  the folder is missing.
 * **Inputs:** `wallpapers/`.
 * **Outputs:** Image files.
 * **Why it exists:** `i3config` sets the wallpaper from this folder with feh.
@@ -320,7 +338,8 @@ All other functions live in `debian-tiling-functions.sh` and take no arguments.
 
 ### configure_git
 
-* **Does:** Copies `configs/.gitignore_global` to the home directory and sets global Git defaults.
+* **Does:** Copies `configs/.gitignore_global` to the home directory if found, sets global Git
+  defaults, and prints the resulting config.
 * **Inputs:** `configs/.gitignore_global`.
 * **Outputs:** `~/.gitignore_global` and changes to `~/.gitconfig`.
 * **Why it exists:** Gives every new repository the same defaults.
@@ -342,6 +361,7 @@ All other functions live in `debian-tiling-functions.sh` and take no arguments.
 
 | Date       | Summary                                                                                                    |
 | :--------- | :--------------------------------------------------------------------------------------------------------- |
+| 2026-11-01 | Moved the menu engine and shared steps into common-functions.sh, identical in both tiling repos.           |
 | 2026-11-01 | Built the menu from one ordered list, matched steps 1 to 14 with fedora-tiling, and listed failed steps.   |
 | 2026-11-01 | Installed all desktop configs, fixed the menu numbering, package names, typos, and a 2 second GRUB delay.  |
 | 2026-11-01 | Locked UFW to deny all inbound, verified the font checksum, and listed failed packages at the end.         |
