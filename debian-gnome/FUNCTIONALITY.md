@@ -241,9 +241,9 @@ All other functions live in `debian-gnome-functions.sh` and take no arguments.
 * **Side effects:** Rewrites the boot configuration. The backup is only made once, so it always
   holds the original file.
 
-### install_numix_theme
+### install_papirus_icons
 
-* **Does:** Installs the Numix GTK theme and Numix Circle icons, then selects them.
+* **Does:** Installs the Papirus icon theme and selects it. The GTK theme is not changed.
 * **Inputs:** None.
 * **Outputs:** Installed packages and changed GNOME interface settings.
 * **Why it exists:** Applies the project's chosen look.
@@ -292,7 +292,8 @@ All other functions live in `debian-gnome-functions.sh` and take no arguments.
 ## Change log
 
 | Date       | Summary                                                                                                   |
-| :--------- | :-------------------------------------------------------------------------------------------------------- |
+| :--------- | :------------------------------------------------------------------------------------------------------- |
+| 2026-11-08 | Replaced Numix with Papirus icons, to match the Fedora GNOME setup. |
 | 2026-11-08 | Added firmware updates through fwupd, Flathub, and a development tools step to match Fedora. |
 | 2026-11-08 | Added the Nerd Font step with a checksum check, and added unzip to the package list. |
 | 2026-11-08 | Added a backup step and a `.ssh` directory step with `700` permissions to the Debian GNOME setup. |

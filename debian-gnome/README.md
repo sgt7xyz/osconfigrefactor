@@ -87,7 +87,7 @@ Run `./debian-gnome-setup.sh` and pick a step by number. Choose **18** to run ev
 |     12 | Install UFW and enable it                        |
 |     13 | Configure swappiness                             |
 |     14 | Speed up boot time                               |
-|     15 | Install Numix theme and icons                    |
+|     15 | Install Papirus icons                            |
 |     16 | Prep and install VSCode                          |
 |     17 | Configure Git                                    |
 |     18 | Execute all                                      |
@@ -117,7 +117,7 @@ After the script finishes:
 * Turn on Night Light under **Settings**, then **Devices**, then **Display**.
 * In Firefox preferences, enable **Restore previous session** and enable DRM support.
 
-The theme is the easy to install Numix GTK theme with Numix Circle icons. The wallpaper comes from
+The icons are the Papirus icon theme. The GTK theme is left as it is. The wallpaper comes from
 [Wallpaper House](https://wallpaper-house.com/wallpaper-id-391811.php).
 
 ![Feather wallpaper preview](images/wallpaperpreview.png)

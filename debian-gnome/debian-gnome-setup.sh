@@ -52,7 +52,7 @@ while true; do
     echo '12. Install UFW and enable it'
     echo '13. Configure swappiness'
     echo '14. Speed up boot time'
-    echo '15. Install Numix theme and icons'
+    echo '15. Install Papirus icons'
     echo '16. Prep and install VSCode'
     echo '17. Configure Git'
     echo '18. Execute all'
@@ -121,7 +121,7 @@ while true; do
             ;;
 
         15) 
-            run_step install_numix_theme
+            run_step install_papirus_icons
             ;;
         
         16) 
@@ -151,7 +151,7 @@ while true; do
             run_step install_ufw_enable
             run_step configure_swappiness
             run_step speed_boot_time
-            run_step install_numix_theme
+            run_step install_papirus_icons
             run_step prep_for_vscode_install
             run_step install_vscode
             run_step configure_git
