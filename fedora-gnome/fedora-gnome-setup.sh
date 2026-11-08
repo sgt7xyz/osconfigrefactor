@@ -44,7 +44,7 @@ while true; do
     echo 'Please select an option:'
     echo
     echo '  System Preparation:'
-    echo '1.  Backup configs'
+    echo '1.  Backup configs and create .ssh directory'
     echo '2.  Update DNF for faster downloads'
     echo '3.  Upgrade Fedora'
     echo '4.  Update firmware'
@@ -82,6 +82,7 @@ while true; do
     case $choice in
         1)  
             run_step backup_configs
+            run_step create_ssh_directory
             ;; 
             
         2)  
@@ -165,6 +166,7 @@ while true; do
             echo 'Executing all setup steps...'
             echo
             run_step backup_configs
+            run_step create_ssh_directory
             run_step update_dnf
             run_step upgrade_fedora
             run_step update_firmware

@@ -38,76 +38,84 @@ run_step() {
 # Each menu number maps to one or more functions so steps can be rerun individually.
 while true; do
     echo 'Please select an option:'
-    echo '1. Update, install, and remove packages (Will be prompted for root/admin password)'
-    echo '2. Create custom directories in your home directory'
-    echo '3. Copy wallpapers to your ~/Pictures/wallpapers directory'
-    echo '4. Customize Gnome settings'
-    echo '5. Customize vimrc file settings'
-    echo '6. Install VLC, plugins, and restricted extras'
-    echo '7. Install UFW and enable it'
-    echo '8. Configure swappiness'
-    echo '9. Speed up boot time'
-    echo '10. Install Numix theme and icons'
-    echo '11. Prep and install VSCode'
-    echo '12. Configure Git'
-    echo '13. Execute all'
+    echo '1. Back up configs and create .ssh directory'
+    echo '2. Update, install, and remove packages (Will be prompted for root/admin password)'
+    echo '3. Create custom directories in your home directory'
+    echo '4. Copy wallpapers to your ~/Pictures/wallpapers directory'
+    echo '5. Customize Gnome settings'
+    echo '6. Customize vimrc file settings'
+    echo '7. Install VLC, plugins, and restricted extras'
+    echo '8. Install UFW and enable it'
+    echo '9. Configure swappiness'
+    echo '10. Speed up boot time'
+    echo '11. Install Numix theme and icons'
+    echo '12. Prep and install VSCode'
+    echo '13. Configure Git'
+    echo '14. Execute all'
     echo '0. Exit'
     echo -n 'Enter the number of your choice: '
     read -r choice
 
     case $choice in
-        1)  
+        1)
+            run_step backup_configs
+            run_step create_ssh_directory
+            ;;
+
+        2)  
             run_step update_debian
             run_step install_packages
             run_step remove_packages
             ;; 
             
-        2)  
+        3)  
             run_step create_directories
             ;; 
 
-        3)  
+        4)  
             run_step copy_wallpapers
             ;; 
     
-        4)  
+        5)  
             run_step customize_gnome
             ;;
 
-        5)  
+        6)  
             run_step configure_vimrc
             ;;
         
-        6)  
+        7)  
             run_step install_vlc_restricted_extras
             ;;
         
-        7) 
+        8) 
             run_step install_ufw_enable
             ;;
             
-        8)  
+        9)  
             run_step configure_swappiness
             ;;
             
-        9)  
+        10)  
             run_step speed_boot_time
             ;;
 
-        10) 
+        11) 
             run_step install_numix_theme
             ;;
         
-        11) 
+        12) 
             run_step prep_for_vscode_install
             run_step install_vscode
             ;;
 
-        12) 
+        13) 
             run_step configure_git
             ;;
 
-        13) 
+        14) 
+            run_step backup_configs
+            run_step create_ssh_directory
             run_step update_debian
             run_step install_packages
             run_step remove_packages

@@ -8,14 +8,28 @@
 # ---------------------------------------------------------------
 
 # 1. Backup configs.
-# Keeps copies of the stock shell dotfiles before later steps change them.
+# Keeps copies of the stock shell dotfiles before later steps or stow can replace them. Fedora uses
+# ~/.bash_profile and Debian uses ~/.profile, so both are tried and missing ones are skipped.
 backup_configs() {
     mkdir -p ~/.config-backups
     local file
-    for file in ~/.bashrc ~/.bash_profile ~/.bash_logout; do
-        cp "$file" ~/.config-backups/ || echo "Warning: $file not found, skipping." >&2
+    for file in ~/.bashrc ~/.profile ~/.bash_profile ~/.bash_logout; do
+        if [ -f "$file" ]; then
+            cp "$file" ~/.config-backups/
+        else
+            echo "Skipping $file, it does not exist."
+        fi
     done
     echo 'Config files backed up successfully!'
+}
+
+# Runs right after the backup as part of step 1, so ~/.ssh is ready before any key is copied in.
+# SECURITY: Mode 700 keeps other users out of ~/.ssh. Setting it on every run also fixes a folder
+# that was created with looser permissions earlier.
+create_ssh_directory() {
+    mkdir -p ~/.ssh
+    chmod 700 ~/.ssh
+    echo 'SSH directory ready at ~/.ssh with permissions 700.'
 }
 
 # 2. Update DNF for faster downloads.

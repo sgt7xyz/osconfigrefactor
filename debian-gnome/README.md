@@ -69,23 +69,24 @@ This project reads no environment variables. Behavior is controlled by the files
 
 ## Usage
 
-Run `./debian-gnome-setup.sh` and pick a step by number. Choose **13** to run every step in order.
+Run `./debian-gnome-setup.sh` and pick a step by number. Choose **14** to run every step in order.
 
-| Option | Step                                             |
-| -----: | :----------------------------------------------- |
-|      1 | Update, install, and remove packages             |
-|      2 | Create custom directories in your home directory |
-|      3 | Copy wallpapers to `~/Pictures/wallpapers`       |
-|      4 | Customize GNOME settings                         |
-|      5 | Customize vimrc file settings                    |
-|      6 | Install VLC, plugins, and restricted extras      |
-|      7 | Install UFW and enable it                        |
-|      8 | Configure swappiness                             |
-|      9 | Speed up boot time                               |
-|     10 | Install Numix theme and icons                    |
-|     11 | Prep and install VSCode                          |
-|     12 | Configure Git                                    |
-|     13 | Execute all                                      |
+| Option | Step                                              |
+| -----: | :------------------------------------------------ |
+|      1 | Back up configs and create .ssh directory        |
+|      2 | Update, install, and remove packages             |
+|      3 | Create custom directories in your home directory |
+|      4 | Copy wallpapers to `~/Pictures/wallpapers`       |
+|      5 | Customize GNOME settings                         |
+|      6 | Customize vimrc file settings                    |
+|      7 | Install VLC, plugins, and restricted extras      |
+|      8 | Install UFW and enable it                        |
+|      9 | Configure swappiness                             |
+|     10 | Speed up boot time                               |
+|     11 | Install Numix theme and icons                    |
+|     12 | Prep and install VSCode                          |
+|     13 | Configure Git                                    |
+|     14 | Execute all                                      |
 |      0 | Exit                                             |
 
 ### Manual steps
@@ -136,9 +137,9 @@ The theme is the easy to install Numix GTK theme with Numix Circle icons. The wa
 ## Security considerations
 
 * Review every script before running it. Most steps call `sudo`.
-* Step 7 enables UFW, which denies inbound connections by default.
-* Step 11 adds the Microsoft signing key so apt verifies VSCode packages.
-* No credentials are stored. Set your Git name and email by hand after step 12.
+* Step 8 enables UFW, which denies inbound connections by default.
+* Step 12 adds the Microsoft signing key so apt verifies VSCode packages.
+* No credentials are stored. Set your Git name and email by hand after step 13.
 
 ## Testing
 
@@ -155,7 +156,7 @@ Test full runs in a throwaway Debian VM before using them on a real machine.
 | Problem                                | Fix                                                          |
 | :------------------------------------- | :----------------------------------------------------------- |
 | A step prints `failed with exit code`  | Read the error above it, fix the cause, and rerun that step. |
-| Wallpaper does not change after step 4 | Log out and back in. GNOME does not always refresh it.       |
+| Wallpaper does not change after step 5 | Log out and back in. GNOME does not always refresh it.       |
 
 ## Roadmap
 

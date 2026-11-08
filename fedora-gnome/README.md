@@ -68,7 +68,7 @@ Run `./fedora-gnome-setup.sh` and pick a step by number. Choose **21** to run ev
 
 | Option | Group                | Step                              |
 | -----: | :------------------- | :-------------------------------- |
-|      1 | System preparation   | Backup configs                    |
+|      1 | System preparation   | Backup configs and .ssh folder    |
 |      2 | System preparation   | Update DNF for faster downloads   |
 |      3 | System preparation   | Upgrade Fedora                    |
 |      4 | System preparation   | Update firmware                   |
@@ -139,7 +139,7 @@ The theme is the easy to install Numix GTK theme with Numix Circle icons. The wa
 ## Security considerations
 
 * Review every script before running it. Most steps call `sudo`.
-* Step 1 backs up `~/.bashrc`, `~/.bash_profile`, and `~/.bash_logout` to `~/.config-backups`.
+* Step 1 backs up `~/.bashrc`, `~/.profile`, `~/.bash_profile`, and `~/.bash_logout` to `~/.config-backups` and creates `~/.ssh` with `700` permissions.
 * Step 16 imports the Microsoft signing key and enables `gpgcheck` for the VSCode repository.
 * Step 18 makes sure firewalld is enabled and prints the active zone for review.
 * No credentials are stored. Set your Git name and email by hand after step 17.

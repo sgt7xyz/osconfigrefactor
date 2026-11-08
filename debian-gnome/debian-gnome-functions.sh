@@ -7,7 +7,32 @@
 # Author:   sgt7 LLC
 # ---------------------------------------------------------------
 
-# 1. Update, install, and remove packages.
+# 1. Back up configs.
+# Keeps copies of the stock shell dotfiles before later steps change them. Debian uses ~/.profile,
+# so it is included, and missing files are skipped.
+backup_configs() {
+    mkdir -p ~/.config-backups
+    local file
+    for file in ~/.bashrc ~/.profile ~/.bash_profile ~/.bash_logout; do
+        if [ -f "$file" ]; then
+            cp "$file" ~/.config-backups/
+        else
+            echo "Skipping $file, it does not exist."
+        fi
+    done
+    echo 'Config files backed up successfully!'
+}
+
+# Runs right after the backup as part of step 1, so ~/.ssh is ready before any key is copied in.
+# SECURITY: Mode 700 keeps other users out of ~/.ssh. Setting it on every run also fixes a folder
+# that was created with looser permissions earlier.
+create_ssh_directory() {
+    mkdir -p ~/.ssh
+    chmod 700 ~/.ssh
+    echo 'SSH directory ready at ~/.ssh with permissions 700.'
+}
+
+# 2. Update, install, and remove packages.
 update_debian() {
     sudo apt-get -y update
     sudo apt-get -y upgrade
@@ -32,7 +57,7 @@ remove_packages() {
     echo 'Packages removed successfully!'
 }
 
-# 2. Create custom directories in the home directory.
+# 3. Create custom directories in the home directory.
 create_directories() {
     local dirs=(~/.themes ~/.icons ~/software ~/scripts ~/Pictures/wallpapers)
     for dir in "${dirs[@]}"; do
@@ -41,14 +66,14 @@ create_directories() {
     echo 'Directories created successfully!'
 }
 
-# 3. Copy wallpapers to ~/Pictures/wallpapers.
+# 4. Copy wallpapers to ~/Pictures/wallpapers.
 copy_wallpapers() {
     cp ./wallpapers/Wallpaper-House.com_391811.jpg ~/Pictures/wallpapers
     echo 'Wallpaper copied successfully!'
     echo 'Sometimes you need to log out and login because of a feature in Gnome that does not update the wallpaper immediately.'
 }
 
-# 4. Customize GNOME settings.
+# 5. Customize GNOME settings.
 # Sets both light and dark wallpaper keys because GNOME picks one based on the active theme.
 customize_gnome() {
     local wallpaper_path="$HOME/Pictures/wallpapers/Wallpaper-House.com_391811.jpg"
@@ -58,7 +83,7 @@ customize_gnome() {
     echo 'Gnome customized successfully!'
 }
 
-# 5. Customize vimrc file settings.
+# 6. Customize vimrc file settings.
 # NOTE: This overwrites any existing ~/.vimrc.
 configure_vimrc() {
     echo "syntax on" > ~/.vimrc
@@ -67,7 +92,7 @@ configure_vimrc() {
     echo 'Vim customized successfully!'
 }
 
-# 6. Install VLC, plugins, and restricted extras.
+# 7. Install VLC, plugins, and restricted extras.
 # The extra codec packages are needed for formats Debian does not play out of the box.
 install_vlc_restricted_extras() {
     sudo apt-get -y install vlc vlc-plugin-samba vlc-plugin-video-splitter
@@ -75,7 +100,7 @@ install_vlc_restricted_extras() {
     echo 'VLC installed and successfully!'
 }
 
-# 7. Install UFW and enable it.
+# 8. Install UFW and enable it.
 # SECURITY: Enables a host firewall that denies inbound traffic by default.
 install_ufw_enable() {
     sudo apt-get -y install ufw
@@ -85,7 +110,7 @@ install_ufw_enable() {
     echo 'UFW installed and successfully!'
 }
 
-# 8. Configure swappiness.
+# 9. Configure swappiness.
 # A value of 10 keeps more of the desktop in RAM instead of swapping it out early.
 configure_swappiness() {
     echo 'swappiness before configuration:'
@@ -96,7 +121,7 @@ configure_swappiness() {
     sysctl vm.swappiness
 }
 
-# 9. Speed up boot time.
+# 10. Speed up boot time.
 # Backs up the GRUB config once, so a rerun cannot replace the original with an edited copy.
 speed_boot_time() {
     [ -f /etc/default/grub.original ] || sudo cp -p /etc/default/grub /etc/default/grub.original
@@ -106,7 +131,7 @@ speed_boot_time() {
     echo 'Boot time speed configured successfully!'
 }
 
-# 10. Install Numix theme and icons.
+# 11. Install Numix theme and icons.
 install_numix_theme() {
     sudo apt-get -y install numix-gtk-theme numix-icon-theme-circle
     gsettings set org.gnome.desktop.interface gtk-theme Numix
@@ -114,7 +139,7 @@ install_numix_theme() {
     echo 'Numix theme installed and configured successfully!'
 }
 
-# 11. Prep and install VSCode.
+# 12. Prep and install VSCode.
 # SECURITY: Adds the Microsoft signing key so apt verifies VSCode packages.
 prep_for_vscode_install() {
     sudo apt-get -y install wget gpg
@@ -133,7 +158,7 @@ install_vscode() {
     echo 'VSScode installed successfully!'
 }
 
-# 12. Configure Git.
+# 13. Configure Git.
 configure_git() {
     cp configs/.gitignore_global ~/
     git config --global init.defaultBranch main
