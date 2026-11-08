@@ -64,7 +64,7 @@ This project reads no environment variables. Behavior is controlled by the files
 
 ## Usage
 
-Run `./fedora-gnome-setup.sh` and pick a step by number. Choose **21** to run every step in order.
+Run `./fedora-gnome-setup.sh` and pick a step by number. Choose **22** to run every step in order.
 
 | Option | Group                | Step                              |
 | -----: | :------------------- | :-------------------------------- |
@@ -75,20 +75,21 @@ Run `./fedora-gnome-setup.sh` and pick a step by number. Choose **21** to run ev
 |      5 | Package management   | Install and remove packages       |
 |      6 | Package management   | Enable Flathub repository         |
 |      7 | Package management   | Install development tools         |
-|      8 | Package management   | Install codecs                    |
-|      9 | Package management   | Install VLC and multimedia codecs |
-|     10 | Environment setup    | Create custom directories         |
-|     11 | Environment setup    | Install fonts                     |
-|     12 | Environment setup    | Copy wallpapers                   |
-|     13 | Environment setup    | Customize GNOME settings          |
-|     14 | Environment setup    | Configure Vim                     |
-|     15 | Environment setup    | Install Numix theme and icons     |
-|     16 | Applications         | Install VSCode                    |
-|     17 | Applications         | Configure Git                     |
-|     18 | System configuration | Install and enable firewalld      |
-|     19 | System configuration | Configure swappiness              |
-|     20 | System configuration | Speed up boot time                |
-|     21 | All                  | Execute all steps                 |
+|      8 | Package management   | Enable RPM Fusion Free            |
+|      9 | Package management   | Install codecs                    |
+|     10 | Package management   | Install VLC and multimedia codecs |
+|     11 | Environment setup    | Create custom directories         |
+|     12 | Environment setup    | Install fonts                     |
+|     13 | Environment setup    | Copy wallpapers                   |
+|     14 | Environment setup    | Customize GNOME settings          |
+|     15 | Environment setup    | Configure Vim                     |
+|     16 | Environment setup    | Install Numix theme and icons     |
+|     17 | Applications         | Install VSCode                    |
+|     18 | Applications         | Configure Git                     |
+|     19 | System configuration | Install and enable firewalld      |
+|     20 | System configuration | Configure swappiness              |
+|     21 | System configuration | Speed up boot time                |
+|     22 | All                  | Execute all steps                 |
 |      0 | Exit                 | Exit                              |
 
 ### Manual steps
@@ -140,10 +141,10 @@ The theme is the easy to install Numix GTK theme with Numix Circle icons. The wa
 
 * Review every script before running it. Most steps call `sudo`.
 * Step 1 backs up `~/.bashrc`, `~/.profile`, `~/.bash_profile`, and `~/.bash_logout` to `~/.config-backups` and creates `~/.ssh` with `700` permissions.
-* Step 8 enables RPM Fusion Free, a third party repository, so full ffmpeg can be installed.
-* Step 16 imports the Microsoft signing key and enables `gpgcheck` for the VSCode repository.
-* Step 18 makes sure firewalld is enabled and prints the active zone for review.
-* No credentials are stored. Set your Git name and email by hand after step 17.
+* Step 8 enables RPM Fusion Free, a third party repository. Step 9 needs it for full ffmpeg. Skip step 8 on machines that should not use it.
+* Step 17 imports the Microsoft signing key and enables `gpgcheck` for the VSCode repository.
+* Step 19 makes sure firewalld is enabled and prints the active zone for review.
+* No credentials are stored. Set your Git name and email by hand after step 18.
 
 ## Testing
 
@@ -160,7 +161,7 @@ Test full runs in a throwaway Fedora VM before using them on a real machine.
 | Problem                                 | Fix                                                          |
 | :-------------------------------------- | :----------------------------------------------------------- |
 | A step prints `failed with exit code`   | Read the error above it, fix the cause, and rerun that step. |
-| Wallpaper does not change after step 13 | Log out and back in. GNOME does not always refresh it.       |
+| Wallpaper does not change after step 14 | Log out and back in. GNOME does not always refresh it.       |
 
 ## Roadmap
 

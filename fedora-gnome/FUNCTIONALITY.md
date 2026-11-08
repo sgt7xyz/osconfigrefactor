@@ -10,7 +10,7 @@ applies fonts, wallpapers, and GNOME tweaks, installs VSCode, sets Git defaults,
 firewalld is running, and tunes swappiness and the boot timeout.
 
 Everything is driven from an interactive menu grouped into five sections. Each option runs one step,
-so a step can be rerun on its own. Option 21 runs every step in order. After each choice the script
+so a step can be rerun on its own. Option 22 runs every step in order. After each choice the script
 waits for Enter before showing the menu again.
 
 ## How the pieces connect
@@ -174,16 +174,16 @@ All other functions live in `fedora-gnome-functions.sh` and take no arguments.
 
 ### install_codecs
 
-* **Does:** Enables RPM Fusion Free, then swaps `ffmpeg-free` for the full `ffmpeg` build.
+* **Does:** Checks that RPM Fusion Free is enabled, then swaps `ffmpeg-free` for the full `ffmpeg` build.
 * **Inputs:** None.
-* **Outputs:** Full ffmpeg codec support. Returns an error if `ffmpeg` is not installed afterwards.
+* **Outputs:** Full ffmpeg codec support. Returns an error if RPM Fusion Free is missing or `ffmpeg` is not installed afterwards.
 * **Why it exists:** `ffmpeg-free` leaves out patent limited formats. `dnf swap` can exit 0 without
   installing `ffmpeg`, so the result is checked directly.
-* **Side effects:** Repository and system package changes through `sudo`.
+* **Side effects:** System package changes through `sudo`. It does not add a repository, so run step 8 first.
 
 ### install_vlc_multimedia_codecs
 
-* **Does:** Installs VLC, `vlc-extras`, and the GStreamer base, good, and bad free plugin sets.
+* **Does:** Installs VLC, `vlc-plugins-extra`, and the GStreamer base, good, and bad free plugin sets.
 * **Inputs:** None.
 * **Outputs:** Installed packages.
 * **Why it exists:** Adds a media player and the codecs available from the default repositories.
@@ -200,9 +200,10 @@ All other functions live in `fedora-gnome-functions.sh` and take no arguments.
 
 ### install_font
 
-* **Does:** Downloads the DroidSansMono Nerd Font v3.4.0 zip into `~/fonttmp`, copies the `.otf`
-  files into `~/.local/share/fonts`, rebuilds the font cache, and removes the temporary folder.
-* **Inputs:** A pinned GitHub release URL.
+* **Does:** Downloads the latest DroidSansMono Nerd Font zip and its `SHA-256.txt` into `~/fonttmp`,
+  checks the zip against that checksum, copies the `.otf` files into `~/.local/share/fonts`, rebuilds
+  the font cache, and removes the temporary folder.
+* **Inputs:** The GitHub `latest` release URLs for the zip and checksum file. The font version is not pinned.
 * **Outputs:** Installed user fonts and a list of the matching font names.
 * **Why it exists:** Terminal prompts and themes use Nerd Font glyphs.
 * **Side effects:** Network call and file writes. It works with full paths and never changes the
@@ -288,7 +289,7 @@ All other functions live in `fedora-gnome-functions.sh` and take no arguments.
 
 ## Known limitations or sharp edges
 
-* **Failures stop a step, not the run.** In option 21 a failed step prints an error and the next
+* **Failures stop a step, not the run.** In option 22 a failed step prints an error and the next
   step still runs. Scroll back to check for `failed with exit code` lines.
 * **Unused directory.** `~/.config/tilix/schemes` is created but nothing is copied into it yet.
 
@@ -296,6 +297,10 @@ All other functions live in `fedora-gnome-functions.sh` and take no arguments.
 
 | Date       | Summary                                                                                                  |
 | :--------- | :------------------------------------------------------------------------------------------------------- |
+| 2026-11-08 | Added unzip to the package list, which the Nerd Font step needs on a stock install. |
+| 2026-11-08 | Font step now fetches the latest Nerd Font release and verifies it against that release's SHA-256.txt. |
+| 2026-11-08 | Replaced the missing vlc-extras package with vlc-plugins-extra, so the VLC step installs again. |
+| 2026-11-08 | Moved RPM Fusion Free into its own menu option 8, so codecs no longer enable it.                         |
 | 2026-11-08 | Enabled RPM Fusion Free before the ffmpeg swap and made the codec step fail when ffmpeg is missing. |
 | 2026-11-08 | Aligned the backup step with the other setups: adds `~/.profile` and skips missing files with a note. |
 | 2026-11-08 | Added a `.ssh` directory step with `700` permissions to the backup step. |

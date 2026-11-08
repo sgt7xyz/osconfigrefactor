@@ -57,7 +57,33 @@ remove_packages() {
     echo 'Packages removed successfully!'
 }
 
-# 3. Create custom directories in the home directory.
+# 3. Update firmware.
+# Checks for firmware updates through fwupd. Refreshing first matters, because stale metadata hides
+# available updates.
+# NOTE: fwupdmgr exits non-zero when there is nothing to update, so those cases are not errors.
+update_firmware() {
+    sudo fwupdmgr refresh
+    sudo fwupdmgr get-updates || echo 'No firmware updates available.'
+    sudo fwupdmgr update || echo 'No firmware updates applied.'
+}
+
+# 4. Enable Flathub repository.
+# Debian does not ship Flatpak or the Flathub remote, so Flatpak is installed here before the remote
+# is added.
+enable_flathub() {
+    sudo apt-get -y install flatpak
+    sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+    echo 'Flathub repository enabled successfully!'
+}
+
+# 5. Install development tools.
+# build-essential provides the compiler and make, the Debian counterpart of Fedora's development
+# tools group.
+install_development_tools() {
+    sudo apt-get -y install build-essential
+}
+
+# 6. Create custom directories in the home directory.
 create_directories() {
     local dirs=(~/.themes ~/.icons ~/software ~/scripts ~/Pictures/wallpapers)
     for dir in "${dirs[@]}"; do
@@ -66,14 +92,41 @@ create_directories() {
     echo 'Directories created successfully!'
 }
 
-# 4. Copy wallpapers to ~/Pictures/wallpapers.
+# 7. Install fonts.
+# The Nerd Font provides the icon glyphs used by terminal prompts and themes.
+# The URLs point at the newest release, so the font is not pinned to one version.
+# SECURITY: The archive is checked against SHA-256.txt from the same release. That catches a damaged
+# or partial download. It does not catch a tampered release, because both files come from GitHub.
+install_font() {
+    local font_dir=~/fonttmp
+    local release_url="https://github.com/ryanoasis/nerd-fonts/releases/latest/download"
+    # A failed earlier run can leave files behind, so the work folder starts empty.
+    rm -rf "$font_dir"
+    mkdir -p "$font_dir" ~/.local/share/fonts
+    echo 'Downloading and Installing Fonts...'
+    curl -fL "$release_url/SHA-256.txt" -o "$font_dir/SHA-256.txt"
+    curl -fL "$release_url/DroidSansMono.zip" -o "$font_dir/DroidSansMono.zip"
+    # Only the checksum line for this archive is checked. A missing line makes the check fail.
+    (cd "$font_dir" && grep ' DroidSansMono.zip$' SHA-256.txt | sha256sum --check --strict)
+    echo "Unzipping the font..."
+    unzip -o "$font_dir/DroidSansMono.zip" -d "$font_dir"
+    cp "$font_dir"/*.otf ~/.local/share/fonts/
+    echo "Refreshing font cache..."
+    fc-cache -f -v
+    echo "Cleaning up..."
+    rm -rf "$font_dir"
+    fc-list | grep -i DroidSansMNerdFont || echo 'Warning: the font is not listed by fc-list yet.' >&2
+    echo 'Fonts installed successfully. Ensure you select the font in your terminal etc.'
+}
+
+# 8. Copy wallpapers to ~/Pictures/wallpapers.
 copy_wallpapers() {
     cp ./wallpapers/Wallpaper-House.com_391811.jpg ~/Pictures/wallpapers
     echo 'Wallpaper copied successfully!'
     echo 'Sometimes you need to log out and login because of a feature in Gnome that does not update the wallpaper immediately.'
 }
 
-# 5. Customize GNOME settings.
+# 9. Customize GNOME settings.
 # Sets both light and dark wallpaper keys because GNOME picks one based on the active theme.
 customize_gnome() {
     local wallpaper_path="$HOME/Pictures/wallpapers/Wallpaper-House.com_391811.jpg"
@@ -83,7 +136,7 @@ customize_gnome() {
     echo 'Gnome customized successfully!'
 }
 
-# 6. Customize vimrc file settings.
+# 10. Customize vimrc file settings.
 # NOTE: This overwrites any existing ~/.vimrc.
 configure_vimrc() {
     echo "syntax on" > ~/.vimrc
@@ -92,7 +145,7 @@ configure_vimrc() {
     echo 'Vim customized successfully!'
 }
 
-# 7. Install VLC, plugins, and restricted extras.
+# 11. Install VLC, plugins, and restricted extras.
 # The extra codec packages are needed for formats Debian does not play out of the box.
 install_vlc_restricted_extras() {
     sudo apt-get -y install vlc vlc-plugin-samba vlc-plugin-video-splitter
@@ -100,7 +153,7 @@ install_vlc_restricted_extras() {
     echo 'VLC installed and successfully!'
 }
 
-# 8. Install UFW and enable it.
+# 12. Install UFW and enable it.
 # SECURITY: Enables a host firewall that denies inbound traffic by default.
 install_ufw_enable() {
     sudo apt-get -y install ufw
@@ -110,7 +163,7 @@ install_ufw_enable() {
     echo 'UFW installed and successfully!'
 }
 
-# 9. Configure swappiness.
+# 13. Configure swappiness.
 # A value of 10 keeps more of the desktop in RAM instead of swapping it out early.
 configure_swappiness() {
     echo 'swappiness before configuration:'
@@ -121,7 +174,7 @@ configure_swappiness() {
     sysctl vm.swappiness
 }
 
-# 10. Speed up boot time.
+# 14. Speed up boot time.
 # Backs up the GRUB config once, so a rerun cannot replace the original with an edited copy.
 speed_boot_time() {
     [ -f /etc/default/grub.original ] || sudo cp -p /etc/default/grub /etc/default/grub.original
@@ -131,7 +184,7 @@ speed_boot_time() {
     echo 'Boot time speed configured successfully!'
 }
 
-# 11. Install Numix theme and icons.
+# 15. Install Numix theme and icons.
 install_numix_theme() {
     sudo apt-get -y install numix-gtk-theme numix-icon-theme-circle
     gsettings set org.gnome.desktop.interface gtk-theme Numix
@@ -139,7 +192,7 @@ install_numix_theme() {
     echo 'Numix theme installed and configured successfully!'
 }
 
-# 12. Prep and install VSCode.
+# 16. Prep and install VSCode.
 # SECURITY: Adds the Microsoft signing key so apt verifies VSCode packages.
 prep_for_vscode_install() {
     sudo apt-get -y install wget gpg
@@ -158,7 +211,7 @@ install_vscode() {
     echo 'VSScode installed successfully!'
 }
 
-# 13. Configure Git.
+# 17. Configure Git.
 configure_git() {
     cp configs/.gitignore_global ~/
     git config --global init.defaultBranch main

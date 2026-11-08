@@ -89,7 +89,9 @@ install_development_tools(){
     sudo dnf -y group install development-tools
 }
 
-# Enables RPM Fusion Free, the only repository that packages full ffmpeg. Fedora no longer ships it.
+# 8. Enable RPM Fusion Free.
+# Enables the only repository that packages full ffmpeg. It is a third party repository, so it is a
+# separate step that is only run on machines that want it.
 # SECURITY: The release package comes over HTTPS and installs the RPM Fusion signing key, so later
 # packages from the repository are checked with gpgcheck. Skipped when the package is already there.
 enable_rpmfusion() {
@@ -101,10 +103,14 @@ enable_rpmfusion() {
     echo 'RPM Fusion Free repository enabled.'
 }
 
-# 8. Install codecs.
+# 9. Install codecs.
 # Swaps the patent-limited ffmpeg-free build for full ffmpeg so common video formats play.
+# Needs RPM Fusion Free from step 8, so it stops with a message when that repository is missing.
 install_codecs() {
-    enable_rpmfusion
+    if ! rpm -q rpmfusion-free-release > /dev/null 2>&1; then
+        echo 'Error: RPM Fusion Free is not enabled. Run step 8 first.' >&2
+        return 1
+    fi
     sudo dnf -y swap ffmpeg-free ffmpeg --allowerasing
     # dnf swap can exit 0 without installing ffmpeg, for example when the package is unavailable,
     # so the install is checked here instead of trusting the exit code.
@@ -115,18 +121,19 @@ install_codecs() {
     echo 'Codecs installed successfully!'
 }
 
-# 9. Install VLC and multimedia codecs.
+# 10. Install VLC and multimedia codecs.
 install_vlc_multimedia_codecs() {
-    sudo dnf -y install vlc vlc-extras
-    
+    # vlc-plugins-extra is the Fedora package for the extra VLC plugins. There is no vlc-extras package.
+    sudo dnf -y install vlc vlc-plugins-extra
+
     # Only default repository plugins are used, so RPM Fusion is not required.
     sudo dnf -y install gstreamer1-plugins-base gstreamer1-plugins-good gstreamer1-plugins-bad-free gstreamer1-plugins-bad-free-extras
-    
+
     echo 'VLC and available multimedia codecs installed successfully!'
     echo 'Note: Some additional codecs may require RPM Fusion repositories for full multimedia support.'
 }
 
-# 10. Create custom directories in the home directory.
+# 11. Create custom directories in the home directory.
 create_directories() {
     local dirs=(~/.themes ~/software ~/code ~/scripts ~/.local/share/fonts ~/.local/share/icons ~/Pictures/wallpapers ~/.config/tilix/schemes)
     for dir in "${dirs[@]}"; do
@@ -135,16 +142,24 @@ create_directories() {
     echo 'Directories created successfully!'
 }
 
-# 11. Install fonts.
+# 12. Install fonts.
 # The Nerd Font provides the icon glyphs used by terminal prompts and themes.
+# The URLs point at the newest release, so the font is not pinned to one version.
+# SECURITY: The archive is checked against SHA-256.txt from the same release. That catches a damaged
+# or partial download. It does not catch a tampered release, because both files come from GitHub.
 install_font() {
     local font_dir=~/fonttmp
-    local font_url="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/DroidSansMono.zip"
+    local release_url="https://github.com/ryanoasis/nerd-fonts/releases/latest/download"
+    # A failed earlier run can leave files behind, so the work folder starts empty.
+    rm -rf "$font_dir"
     mkdir -p "$font_dir" ~/.local/share/fonts
     echo 'Downloading and Installing Fonts...'
-    curl -fL "$font_url" -o "$font_dir/DroidSansMonoNerdFont.zip"
+    curl -fL "$release_url/SHA-256.txt" -o "$font_dir/SHA-256.txt"
+    curl -fL "$release_url/DroidSansMono.zip" -o "$font_dir/DroidSansMono.zip"
+    # Only the checksum line for this archive is checked. A missing line makes the check fail.
+    (cd "$font_dir" && grep ' DroidSansMono.zip$' SHA-256.txt | sha256sum --check --strict)
     echo "Unzipping the font..."
-    unzip -o "$font_dir/DroidSansMonoNerdFont.zip" -d "$font_dir"
+    unzip -o "$font_dir/DroidSansMono.zip" -d "$font_dir"
     cp "$font_dir"/*.otf ~/.local/share/fonts/
     echo "Refreshing font cache..."
     fc-cache -f -v
@@ -154,14 +169,14 @@ install_font() {
     echo 'Fonts installed successfully. Ensure you select the font in your terminal etc.'
 }
 
-# 12. Copy wallpapers to ~/Pictures/wallpapers.
+# 13. Copy wallpapers to ~/Pictures/wallpapers.
 copy_wallpapers() {
     cp wallpapers/* ~/Pictures/wallpapers
     echo 'Wallpaper copied successfully!'
     echo 'Sometimes you need to log out and login because of a feature in Gnome that does not update the wallpaper immediately.'
 }
 
-# 13. Customize GNOME settings.
+# 14. Customize GNOME settings.
 # Sets both light and dark wallpaper keys because GNOME picks one based on the active theme.
 customize_gnome() {
     local wallpaper_path="$HOME/Pictures/wallpapers/fedora-black-4k.png"
@@ -171,7 +186,7 @@ customize_gnome() {
     echo 'Gnome customized successfully!'
 }
 
-# 14. Configure Vim.
+# 15. Configure Vim.
 # NOTE: This overwrites any existing ~/.vimrc.
 configure_vimrc() {
     echo "syntax on" > ~/.vimrc
@@ -180,7 +195,7 @@ configure_vimrc() {
     echo 'Vim customized successfully!'
 }
 
-# 15. Install Numix theme and icons.
+# 16. Install Numix theme and icons.
 install_numix_theme() {
     sudo dnf -y install numix-gtk-theme numix-icon-theme-circle
     gsettings set org.gnome.desktop.interface gtk-theme Numix
@@ -188,20 +203,20 @@ install_numix_theme() {
     echo 'Numix theme installed and configured successfully!'
 }
 
-# 16. Prep and install VSCode.
+# 17. Prep and install VSCode.
 # SECURITY: Imports the Microsoft signing key and enables gpgcheck so dnf verifies VSCode packages.
 install_vscode() {
     sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
     sudo sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
     echo 'VSCode repository configured successfully!'
-    
+
     # NOTE: makecache refreshes metadata. dnf check-update exits with 100 when updates exist.
     sudo dnf makecache
     sudo dnf -y install code
     echo 'VSCode installed successfully!'
 }
 
-# 17. Configure Git.
+# 18. Configure Git.
 configure_git() {
     if [ -f configs/.gitignore_global ]; then
         cp configs/.gitignore_global ~/
@@ -217,23 +232,23 @@ configure_git() {
     echo 'Base configuration for Git completed. Ensure you set your username and email!'
 }
 
-# 18. Install and enable firewalld.
+# 19. Install and enable firewalld.
 # SECURITY: Makes sure the host firewall is running and prints the active zone for review.
 install_firewalld_enable() {
     # firewalld usually ships with Fedora, so this install is a no-op unless it was removed.
     sudo dnf -y install firewalld
-    
+
     sudo systemctl enable firewalld
     sudo systemctl start firewalld
-    
+
     sudo firewall-cmd --state
     sudo firewall-cmd --get-default-zone
     sudo firewall-cmd --list-all
-    
+
     echo 'firewalld installed and enabled successfully!'
 }
 
-# 19. Configure swappiness.
+# 20. Configure swappiness.
 # A value of 10 keeps more of the desktop in RAM instead of swapping it out early.
 configure_swappiness() {
     echo 'swappiness before configuration:'
@@ -244,7 +259,7 @@ configure_swappiness() {
     sysctl vm.swappiness
 }
 
-# 20. Speed up boot time.
+# 21. Speed up boot time.
 # Backs up the GRUB config once, so a rerun cannot replace the original with an edited copy.
 speed_boot_time() {
     [ -f /etc/default/grub.original ] || sudo cp -p /etc/default/grub /etc/default/grub.original
