@@ -140,6 +140,7 @@ The theme is the easy to install Numix GTK theme with Numix Circle icons. The wa
 
 * Review every script before running it. Most steps call `sudo`.
 * Step 1 backs up `~/.bashrc`, `~/.profile`, `~/.bash_profile`, and `~/.bash_logout` to `~/.config-backups` and creates `~/.ssh` with `700` permissions.
+* Step 8 enables RPM Fusion Free, a third party repository, so full ffmpeg can be installed.
 * Step 16 imports the Microsoft signing key and enables `gpgcheck` for the VSCode repository.
 * Step 18 makes sure firewalld is enabled and prints the active zone for review.
 * No credentials are stored. Set your Git name and email by hand after step 17.

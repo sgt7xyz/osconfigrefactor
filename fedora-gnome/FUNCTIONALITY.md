@@ -164,14 +164,22 @@ All other functions live in `fedora-gnome-functions.sh` and take no arguments.
 * **Why it exists:** Needed to build software from source.
 * **Side effects:** System package changes.
 
+### enable_rpmfusion
+
+* **Does:** Installs the RPM Fusion Free release package for the running Fedora version, if it is not already installed.
+* **Inputs:** The Fedora version from `rpm -E %fedora`.
+* **Outputs:** The RPM Fusion Free repository, with its signing key imported.
+* **Why it exists:** Full `ffmpeg` is only packaged by RPM Fusion Free, not by Fedora.
+* **Side effects:** Adds a third party repository and imports its signing key through `sudo`.
+
 ### install_codecs
 
-* **Does:** Swaps `ffmpeg-free` for the full `ffmpeg` build.
+* **Does:** Enables RPM Fusion Free, then swaps `ffmpeg-free` for the full `ffmpeg` build.
 * **Inputs:** None.
-* **Outputs:** Full ffmpeg codec support.
-* **Why it exists:** `ffmpeg-free` leaves out patent limited formats.
-* **Side effects:** System package changes. The full `ffmpeg` package normally comes from RPM
-  Fusion, which this script does not enable, so this step is likely to fail on a stock install.
+* **Outputs:** Full ffmpeg codec support. Returns an error if `ffmpeg` is not installed afterwards.
+* **Why it exists:** `ffmpeg-free` leaves out patent limited formats. `dnf swap` can exit 0 without
+  installing `ffmpeg`, so the result is checked directly.
+* **Side effects:** Repository and system package changes through `sudo`.
 
 ### install_vlc_multimedia_codecs
 
@@ -282,15 +290,13 @@ All other functions live in `fedora-gnome-functions.sh` and take no arguments.
 
 * **Failures stop a step, not the run.** In option 21 a failed step prints an error and the next
   step still runs. Scroll back to check for `failed with exit code` lines.
-* **Codecs need RPM Fusion.** `install_codecs` swaps to the full `ffmpeg`, which normally comes
-  from RPM Fusion. Nothing in the script enables it, so on a stock install this step reports a
-  failure.
 * **Unused directory.** `~/.config/tilix/schemes` is created but nothing is copied into it yet.
 
 ## Change log
 
 | Date       | Summary                                                                                                  |
 | :--------- | :------------------------------------------------------------------------------------------------------- |
+| 2026-11-08 | Enabled RPM Fusion Free before the ffmpeg swap and made the codec step fail when ffmpeg is missing. |
 | 2026-11-08 | Aligned the backup step with the other setups: adds `~/.profile` and skips missing files with a note. |
 | 2026-11-08 | Added a `.ssh` directory step with `700` permissions to the backup step. |
 | 2026-11-01 | Replaced the ShellCheck workflow with a pinned, checksum verified release and checkout SHA.              |

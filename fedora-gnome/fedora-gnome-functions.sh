@@ -89,10 +89,29 @@ install_development_tools(){
     sudo dnf -y group install development-tools
 }
 
+# Enables RPM Fusion Free, the only repository that packages full ffmpeg. Fedora no longer ships it.
+# SECURITY: The release package comes over HTTPS and installs the RPM Fusion signing key, so later
+# packages from the repository are checked with gpgcheck. Skipped when the package is already there.
+enable_rpmfusion() {
+    local fedora_version
+    fedora_version="$(rpm -E %fedora)"
+    if ! rpm -q rpmfusion-free-release > /dev/null 2>&1; then
+        sudo dnf -y install "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$fedora_version.noarch.rpm"
+    fi
+    echo 'RPM Fusion Free repository enabled.'
+}
+
 # 8. Install codecs.
 # Swaps the patent-limited ffmpeg-free build for full ffmpeg so common video formats play.
 install_codecs() {
+    enable_rpmfusion
     sudo dnf -y swap ffmpeg-free ffmpeg --allowerasing
+    # dnf swap can exit 0 without installing ffmpeg, for example when the package is unavailable,
+    # so the install is checked here instead of trusting the exit code.
+    if ! rpm -q ffmpeg > /dev/null 2>&1; then
+        echo 'Error: ffmpeg is not installed after the swap.' >&2
+        return 1
+    fi
     echo 'Codecs installed successfully!'
 }
 
