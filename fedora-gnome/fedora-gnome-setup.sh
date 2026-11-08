@@ -63,7 +63,7 @@ while true; do
     echo '13. Copy wallpapers'
     echo '14. Customize GNOME settings'
     echo '15. Configure Vim'
-    echo '16. Install Numix theme and icons'
+    echo '16. Install Papirus icons'
     echo
     echo '  Applications & Tools:'
     echo '17. Install VSCode'
@@ -145,7 +145,7 @@ while true; do
             ;;
 
         16) 
-            run_step install_numix_theme
+            run_step install_papirus_icons
             ;;
 
         17) 
@@ -188,7 +188,7 @@ while true; do
             run_step copy_wallpapers
             run_step customize_gnome
             run_step configure_vimrc
-            run_step install_numix_theme
+            run_step install_papirus_icons
             run_step install_vscode
             run_step configure_git
             run_step install_firewalld_enable

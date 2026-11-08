@@ -234,9 +234,9 @@ All other functions live in `fedora-gnome-functions.sh` and take no arguments.
 * **Why it exists:** Gives Vim usable defaults.
 * **Side effects:** Overwrites any existing `~/.vimrc`.
 
-### install_numix_theme
+### install_papirus_icons
 
-* **Does:** Installs the Numix GTK theme and Numix Circle icons, then selects them.
+* **Does:** Installs the Papirus icon theme and selects it. The GTK theme is not changed.
 * **Inputs:** None.
 * **Outputs:** Installed packages and changed interface settings.
 * **Why it exists:** Applies the project's chosen look.
@@ -297,6 +297,7 @@ All other functions live in `fedora-gnome-functions.sh` and take no arguments.
 
 | Date       | Summary                                                                                                  |
 | :--------- | :------------------------------------------------------------------------------------------------------- |
+| 2026-11-08 | Replaced Numix with Papirus icons, because Fedora 45 no longer packages Numix. |
 | 2026-11-08 | Added unzip to the package list, which the Nerd Font step needs on a stock install. |
 | 2026-11-08 | Font step now fetches the latest Nerd Font release and verifies it against that release's SHA-256.txt. |
 | 2026-11-08 | Replaced the missing vlc-extras package with vlc-plugins-extra, so the VLC step installs again. |

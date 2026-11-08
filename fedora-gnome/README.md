@@ -83,7 +83,7 @@ Run `./fedora-gnome-setup.sh` and pick a step by number. Choose **22** to run ev
 |     13 | Environment setup    | Copy wallpapers                   |
 |     14 | Environment setup    | Customize GNOME settings          |
 |     15 | Environment setup    | Configure Vim                     |
-|     16 | Environment setup    | Install Numix theme and icons     |
+|     16 | Environment setup    | Install Papirus icons             |
 |     17 | Applications         | Install VSCode                    |
 |     18 | Applications         | Configure Git                     |
 |     19 | System configuration | Install and enable firewalld      |
@@ -116,7 +116,7 @@ Install these by hand, and do not run install scripts without reviewing them fir
 * [Homebrew](https://brew.sh)
 * [Calibre](https://calibre-ebook.com)
 
-The theme is the easy to install Numix GTK theme with Numix Circle icons. The wallpaper comes from
+The icons are the Papirus icon theme. The GTK theme is left as it is. The wallpaper comes from
 [catppuccin-wallpapers](https://github.com/zhichaoh/catppuccin-wallpapers).
 
 ![Fedora black 4k wallpaper preview](images/fedora-black-4k-preview.png)
