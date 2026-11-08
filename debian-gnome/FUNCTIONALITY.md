@@ -9,7 +9,7 @@ updates the system, installs a fixed set of tools, purges the bundled GNOME game
 and system tweaks, enables a firewall, installs VSCode, and sets Git defaults.
 
 Everything is driven from an interactive numbered menu. Each menu option runs one step, so a single
-step can be rerun on its own. Option 14 runs every step in order.
+step can be rerun on its own. Option 18 runs every step in order.
 
 ## How the pieces connect
 
@@ -45,7 +45,7 @@ Read the files in this order.
 
 It resolves its directory with `dirname` and `realpath`, so the functions file is found even when
 the script is started from elsewhere. The `case` block maps each number to one or more functions.
-Option 1 calls two functions, option 2 calls three, and option 12 calls two, because those steps must run together.
+Option 1 calls two functions, option 2 calls three, and option 16 calls two, because those steps must run together.
 
 The script runs with `set -euo pipefail` and changes into the repository directory, so the data
 files are found wherever it is started from. Every function call goes through `run_step`, so a
@@ -136,6 +136,32 @@ All other functions live in `debian-gnome-functions.sh` and take no arguments.
 * **Why it exists:** Clears out the GNOME games that ship with the desktop task.
 * **Side effects:** System package removal through `sudo`.
 
+### update_firmware
+
+* **Does:** Refreshes the fwupd firmware metadata, lists available updates, and applies them.
+* **Inputs:** None.
+* **Outputs:** Firmware updates for supported devices. Prints a message when there is nothing to apply.
+* **Why it exists:** Firmware updates are a separate channel from apt and are often missed.
+* **Side effects:** Network calls and firmware changes through `sudo`. Some updates need a reboot.
+  A failed refresh stops the step. A failed `get-updates` or `update` is treated as nothing to do.
+
+### enable_flathub
+
+* **Does:** Installs `flatpak` with apt, then adds the Flathub remote.
+* **Inputs:** None.
+* **Outputs:** A Flathub remote for `flatpak install`.
+* **Why it exists:** Debian does not ship Flatpak or the Flathub remote, unlike Fedora.
+* **Side effects:** Package installs and a remote entry in the system Flatpak configuration.
+
+### install_development_tools
+
+* **Does:** Installs `build-essential`, which provides the compiler and `make`.
+* **Inputs:** None.
+* **Outputs:** Build tools on the PATH.
+* **Why it exists:** Some tools and packages need a compiler. This is the Debian counterpart of
+  Fedora's development tools group.
+* **Side effects:** Package installs through `sudo`.
+
 ### create_directories
 
 * **Does:** Creates `~/.themes`, `~/.icons`, `~/software`, `~/scripts`, and
@@ -144,6 +170,17 @@ All other functions live in `debian-gnome-functions.sh` and take no arguments.
 * **Outputs:** New directories in the home directory.
 * **Why it exists:** Later steps copy files into these paths.
 * **Side effects:** Directory creation.
+
+### install_font
+
+* **Does:** Downloads the latest DroidSansMono Nerd Font zip and its `SHA-256.txt` into `~/fonttmp`,
+  checks the zip against that checksum, copies the `.otf` files into `~/.local/share/fonts`, rebuilds
+  the font cache, and removes the temporary folder.
+* **Inputs:** The GitHub `latest` release URLs for the zip and checksum file. The font version is not pinned.
+* **Outputs:** Installed user fonts and a list of the matching font names.
+* **Why it exists:** Terminal prompts and themes use Nerd Font glyphs.
+* **Side effects:** Network call and file writes. It works with full paths and never changes the
+  working directory.
 
 ### copy_wallpapers
 
@@ -241,7 +278,7 @@ All other functions live in `debian-gnome-functions.sh` and take no arguments.
 
 ## Known limitations or sharp edges
 
-* **Failures stop a step, not the run.** In option 14 a failed step prints an error and the next
+* **Failures stop a step, not the run.** In option 18 a failed step prints an error and the next
   step still runs. Scroll back to check for `failed with exit code` lines.
 * **List lines are taken literally.** Package lists have no comment syntax, and a line with
   trailing spaces is passed to apt with the spaces.
@@ -256,6 +293,8 @@ All other functions live in `debian-gnome-functions.sh` and take no arguments.
 
 | Date       | Summary                                                                                                   |
 | :--------- | :-------------------------------------------------------------------------------------------------------- |
+| 2026-11-08 | Added firmware updates through fwupd, Flathub, and a development tools step to match Fedora. |
+| 2026-11-08 | Added the Nerd Font step with a checksum check, and added unzip to the package list. |
 | 2026-11-08 | Added a backup step and a `.ssh` directory step with `700` permissions to the Debian GNOME setup. |
 | 2026-11-01 | Replaced the ShellCheck workflow with a pinned, checksum verified release and checkout SHA.               |
 | 2026-11-01 | Added strict mode with per step error handling and fixed the package lists, GRUB backup, and apt prompts. |

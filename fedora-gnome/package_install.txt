@@ -5,3 +5,4 @@ gnome-extensions-app
 nmap
 tilix
 vim
+unzip

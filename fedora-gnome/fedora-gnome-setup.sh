@@ -53,27 +53,28 @@ while true; do
     echo '5.  Install and Remove Packages'
     echo '6.  Enable Flathub repository'
     echo '7.  Install development tools'
-    echo '8.  Install codecs'
-    echo '9.  Install VLC and multimedia codecs'
+    echo '8.  Enable RPM Fusion Free repository'
+    echo '9.  Install codecs'
+    echo '10. Install VLC and multimedia codecs'
     echo
     echo '  Environment Setup:'
-    echo '10. Create custom directories'
-    echo '11. Install fonts'
-    echo '12. Copy wallpapers'
-    echo '13. Customize GNOME settings'
-    echo '14. Configure Vim'
-    echo '15. Install Numix theme and icons'
+    echo '11. Create custom directories'
+    echo '12. Install fonts'
+    echo '13. Copy wallpapers'
+    echo '14. Customize GNOME settings'
+    echo '15. Configure Vim'
+    echo '16. Install Numix theme and icons'
     echo
     echo '  Applications & Tools:'
-    echo '16. Install VSCode'
-    echo '17. Configure Git'
+    echo '17. Install VSCode'
+    echo '18. Configure Git'
     echo
     echo '  System Configuration:'
-    echo '18. Install and enable firewalld'
-    echo '19. Configure swappiness'
-    echo '20. Speed up boot time'
+    echo '19. Install and enable firewalld'
+    echo '20. Configure swappiness'
+    echo '21. Speed up boot time'
     echo
-    echo '21. Execute all steps'
+    echo '22. Execute all steps'
     echo '0.  Exit'
     echo
     echo -n 'Enter the number of your choice: '
@@ -111,58 +112,63 @@ while true; do
             ;;
 
         8) 
+            run_step enable_rpmfusion
+            ;;
+            
+
+        9) 
             run_step install_codecs
             ;;
 
-        9) 
+        10) 
             run_step install_vlc_multimedia_codecs
             ;;
         
-        10)  
+        11)  
             run_step create_directories
             ;;
             
-        11)  
+        12)  
             run_step install_font
             ;;
             
-        12)  
+        13)  
             run_step copy_wallpapers
             ;;
 
-        13) 
+        14) 
             run_step customize_gnome
             ;;
         
-        14) 
+        15) 
             run_step configure_vimrc
             ;;
 
-        15) 
+        16) 
             run_step install_numix_theme
             ;;
 
-        16) 
+        17) 
             run_step install_vscode
             ;;
 
-        17) 
+        18) 
             run_step configure_git
             ;;
 
-        18) 
+        19) 
             run_step install_firewalld_enable
             ;;
 
-        19) 
+        20) 
             run_step configure_swappiness
             ;;
 
-        20) 
+        21) 
             run_step speed_boot_time
             ;;
 
-        21) 
+        22) 
             echo 'Executing all setup steps...'
             echo
             run_step backup_configs
@@ -174,6 +180,7 @@ while true; do
             run_step remove_packages
             run_step enable_flathub
             run_step install_development_tools
+            run_step enable_rpmfusion
             run_step install_codecs
             run_step install_vlc_multimedia_codecs
             run_step create_directories

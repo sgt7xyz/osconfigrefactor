@@ -1,14 +1,15 @@
 bash-completion
-build-essential
 curl
 debian-reference-en
 dconf-editor
 git
+fwupd
 neofetch
 nmap
 tcpdump
 tilix
 tmux
 tree
+unzip
 vim
 wget
