@@ -195,12 +195,13 @@ configure_vimrc() {
     echo 'Vim customized successfully!'
 }
 
-# 16. Install Numix theme and icons.
-install_numix_theme() {
-    sudo dnf -y install numix-gtk-theme numix-icon-theme-circle
-    gsettings set org.gnome.desktop.interface gtk-theme Numix
-    gsettings set org.gnome.desktop.interface icon-theme Numix-Circle
-    echo 'Numix theme installed and configured successfully!'
+# 16. Install Papirus icons.
+# Numix was removed from Fedora 45, so Papirus, which Fedora still packages, replaces it. The GTK
+# theme is left as it is.
+install_papirus_icons() {
+    sudo dnf -y install papirus-icon-theme
+    gsettings set org.gnome.desktop.interface icon-theme Papirus
+    echo 'Papirus icon theme installed and configured successfully!'
 }
 
 # 17. Prep and install VSCode.
