@@ -81,7 +81,7 @@ fedora-tiling, so the same number means the same step on both systems.
 
 | Option | Group                | Step                                             |
 | -----: | :------------------- | :----------------------------------------------- |
-|      1 | System preparation   | Back up shell dotfiles                           |
+|      1 | System preparation   | Back up configs and create .ssh directory        |
 |      2 | System preparation   | Update and upgrade the system                    |
 |      3 | System preparation   | Install and remove packages                      |
 |      4 | Environment setup    | Create custom directories                        |
@@ -121,7 +121,7 @@ fedora-tiling, so the same number means the same step on both systems.
 ## Security considerations
 
 * Review every script before running it. Most steps call `sudo`.
-* Step 1 backs up `~/.bashrc`, `~/.profile`, and `~/.bash_logout` to `~/.config-backups`.
+* Step 1 backs up `~/.bashrc`, `~/.profile`, and `~/.bash_logout` to `~/.config-backups` and creates `~/.ssh` with `700` permissions.
 * Step 5 checks the Nerd Font download against its published SHA-256 before installing it.
 * Step 11 adds the Microsoft signing key so apt verifies VSCode packages.
 * Step 12 enables UFW so it denies every inbound connection the host did not start, including the

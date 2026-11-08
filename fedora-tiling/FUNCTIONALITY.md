@@ -195,6 +195,14 @@ These entries describe `common-functions.sh`, which is identical in both tiling 
 * **Why it exists:** Keeps the stock dotfiles in case `stow` or a later step replaces them.
 * **Side effects:** File writes. Safe to rerun, but it overwrites the earlier backups.
 
+#### create_ssh_directory
+
+* **Does:** Creates `~/.ssh` if it is missing and sets its permissions to `700`.
+* **Inputs:** None.
+* **Outputs:** An empty `~/.ssh` folder that only the owner can open. No keys are created or copied.
+* **Why it exists:** Gives SSH keys a private place before they are added. The mode is set on every run, so a folder that was left readable by other users is fixed.
+* **Side effects:** Creates a directory and changes its permissions.
+
 #### create_directories
 
 * **Does:** Creates `~/.config`, `~/dotfiles`, `~/.local/share/themes`, `~/.local/share/fonts`,
@@ -426,6 +434,7 @@ These entries describe `common-functions.sh`, which is identical in both tiling 
 
 | Date       | Summary                                                                                                               |
 | :--------- | :-------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-08 | Added a `.ssh` directory step with `700` permissions to the backup step. |
 | 2026-11-02 | Moved the VirtualBox install from 7.1 to 7.2 (7.2.22 is the current release).                                         |
 | 2026-11-01 | Renamed steps to match debian-tiling, such as configure_firewall and configure_boot_time, and ordered them by menu.   |
 | 2026-11-01 | Moved the menu engine and shared steps into common-functions.sh, identical in both tiling repos.                      |

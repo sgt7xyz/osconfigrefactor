@@ -91,11 +91,19 @@ All other functions live in `fedora-gnome-functions.sh` and take no arguments.
 
 ### backup_configs
 
-* **Does:** Copies `~/.bashrc`, `~/.bash_profile`, and `~/.bash_logout` into `~/.config-backups`.
-* **Inputs:** Those three files.
-* **Outputs:** A backup directory, with a warning for each file that is missing.
+* **Does:** Copies `~/.bashrc`, `~/.profile`, `~/.bash_profile`, and `~/.bash_logout` into `~/.config-backups`.
+* **Inputs:** Those four files. A file that does not exist is skipped with a message.
+* **Outputs:** A backup folder with copies of the files that exist.
 * **Why it exists:** Keeps the stock dotfiles before later steps change the home directory.
 * **Side effects:** File writes. Safe to rerun, but it overwrites the earlier backups.
+
+### create_ssh_directory
+
+* **Does:** Creates `~/.ssh` if it is missing and sets its permissions to `700`.
+* **Inputs:** None.
+* **Outputs:** An empty `~/.ssh` folder that only the owner can open. No keys are created or copied.
+* **Why it exists:** Gives SSH keys a private place before they are added. The mode is set on every run, so a folder that was left readable by other users is fixed.
+* **Side effects:** Creates a directory and changes its permissions.
 
 ### update_dnf
 
@@ -283,6 +291,8 @@ All other functions live in `fedora-gnome-functions.sh` and take no arguments.
 
 | Date       | Summary                                                                                                  |
 | :--------- | :------------------------------------------------------------------------------------------------------- |
+| 2026-11-08 | Aligned the backup step with the other setups: adds `~/.profile` and skips missing files with a note. |
+| 2026-11-08 | Added a `.ssh` directory step with `700` permissions to the backup step. |
 | 2026-11-01 | Replaced the ShellCheck workflow with a pinned, checksum verified release and checkout SHA.              |
 | 2026-11-01 | Added strict mode with per step error handling and fixed the package lists, font step, and dnf settings. |
 | 2026-11-01 | Added FUNCTIONALITY.md. Renamed scripts to kebab-case.                                                   |

@@ -27,7 +27,7 @@ cd "$script_dir"
 # and Fedora only steps come last.
 menu=(
     "# System preparation"
-    "backup_configs|Back up shell dotfiles"
+    "backup_configs create_ssh_directory|Back up shell dotfiles and create .ssh directory"
     "update_system|Update and upgrade the system"
     "install_packages remove_packages|Install and remove packages"
     "# Environment setup"

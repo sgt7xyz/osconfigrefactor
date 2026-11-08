@@ -9,7 +9,7 @@ updates the system, installs a fixed set of tools, purges the bundled GNOME game
 and system tweaks, enables a firewall, installs VSCode, and sets Git defaults.
 
 Everything is driven from an interactive numbered menu. Each menu option runs one step, so a single
-step can be rerun on its own. Option 13 runs every step in order.
+step can be rerun on its own. Option 14 runs every step in order.
 
 ## How the pieces connect
 
@@ -45,7 +45,7 @@ Read the files in this order.
 
 It resolves its directory with `dirname` and `realpath`, so the functions file is found even when
 the script is started from elsewhere. The `case` block maps each number to one or more functions.
-Option 1 calls three functions and option 11 calls two, because those steps must run together.
+Option 1 calls two functions, option 2 calls three, and option 12 calls two, because those steps must run together.
 
 The script runs with `set -euo pipefail` and changes into the repository directory, so the data
 files are found wherever it is started from. Every function call goes through `run_step`, so a
@@ -95,6 +95,22 @@ input.
 * **Side effects:** None of its own. A `cd` or variable change inside a step stays in its subshell.
 
 All other functions live in `debian-gnome-functions.sh` and take no arguments.
+
+### backup_configs
+
+* **Does:** Copies `~/.bashrc`, `~/.profile`, `~/.bash_profile`, and `~/.bash_logout` into `~/.config-backups`.
+* **Inputs:** Those four files. A file that does not exist is skipped with a message.
+* **Outputs:** A backup folder with copies of the files that exist.
+* **Why it exists:** Keeps the stock dotfiles before later steps change the home directory.
+* **Side effects:** File writes. Safe to rerun, but it overwrites the earlier backups.
+
+### create_ssh_directory
+
+* **Does:** Creates `~/.ssh` if it is missing and sets its permissions to `700`.
+* **Inputs:** None.
+* **Outputs:** An empty `~/.ssh` folder that only the owner can open. No keys are created or copied.
+* **Why it exists:** Gives SSH keys a private place before they are added. The mode is set on every run, so a folder that was left readable by other users is fixed.
+* **Side effects:** Creates a directory and changes its permissions.
 
 ### update_debian
 
@@ -225,7 +241,7 @@ All other functions live in `debian-gnome-functions.sh` and take no arguments.
 
 ## Known limitations or sharp edges
 
-* **Failures stop a step, not the run.** In option 13 a failed step prints an error and the next
+* **Failures stop a step, not the run.** In option 14 a failed step prints an error and the next
   step still runs. Scroll back to check for `failed with exit code` lines.
 * **List lines are taken literally.** Package lists have no comment syntax, and a line with
   trailing spaces is passed to apt with the spaces.
@@ -240,6 +256,7 @@ All other functions live in `debian-gnome-functions.sh` and take no arguments.
 
 | Date       | Summary                                                                                                   |
 | :--------- | :-------------------------------------------------------------------------------------------------------- |
+| 2026-11-08 | Added a backup step and a `.ssh` directory step with `700` permissions to the Debian GNOME setup. |
 | 2026-11-01 | Replaced the ShellCheck workflow with a pinned, checksum verified release and checkout SHA.               |
 | 2026-11-01 | Added strict mode with per step error handling and fixed the package lists, GRUB backup, and apt prompts. |
 | 2026-11-01 | Added FUNCTIONALITY.md. Renamed scripts and `wallpapers/` to kebab-case.                                  |

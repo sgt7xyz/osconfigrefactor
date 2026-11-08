@@ -155,6 +155,15 @@ backup_configs() {
     echo 'Config files backed up successfully!'
 }
 
+# Runs right after the backup, so ~/.ssh is ready before any key is copied in.
+# SECURITY: Mode 700 keeps other users out of ~/.ssh. Setting it on every run also fixes a folder
+# that was created with looser permissions earlier.
+create_ssh_directory() {
+    mkdir -p ~/.ssh
+    chmod 700 ~/.ssh
+    echo 'SSH directory ready at ~/.ssh with permissions 700.'
+}
+
 # Creates the folders that the font, wallpaper, and tiling steps copy into.
 create_directories() {
     local dirs=(~/.config ~/dotfiles ~/.local/share/themes ~/.local/share/fonts ~/.local/share/icons ~/software ~/scripts ~/Pictures/wallpapers)
