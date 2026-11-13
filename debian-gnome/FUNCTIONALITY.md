@@ -23,13 +23,14 @@ and `git`. Data comes from files in the repository:
 * `package_install.txt` and `package_remove.txt` hold package names, one per line.
 * `wallpapers/` holds the desktop wallpaper.
 * `configs/.gitignore_global` is the global Git ignore file.
+* `configs/nvim/init.lua` is the Neovim config, the same file used on macOS.
 
 ```text
 debian-gnome-setup.sh (menu loop)
   └── sources debian-gnome-functions.sh
         ├── apt-get        <-- package_install.txt, package_remove.txt
         ├── cp, gsettings  <-- wallpapers/
-        ├── cp, git config <-- configs/.gitignore_global
+        ├── cp, git config <-- configs/.gitignore_global, configs/nvim/init.lua
         └── ufw, sysctl, update-grub
 ```
 
@@ -70,6 +71,15 @@ listed above.
 **Purpose:** Global Git ignore patterns copied into the home directory by the Git step.
 
 **Depends on:** Nothing.
+
+### configs/nvim/init.lua
+
+**Purpose:** Neovim config copied to `~/.config/nvim` by the Neovim step. It is the same file as
+`macos-setup/configs/nvim/init.lua`. It installs the Catppuccin Macchiato theme with `vim.pack`,
+then turns on line numbers, a status line, and visible whitespace.
+
+**Depends on:** Neovim 0.12 or newer, and network access on first launch to clone the theme from
+GitHub.
 
 ### .github/workflows/shellcheck.yml and .shellcheckrc
 
@@ -198,14 +208,14 @@ All other functions live in `debian-gnome-functions.sh` and take no arguments.
 * **Why it exists:** GNOME picks the wallpaper key from the active theme, so both must be set.
 * **Side effects:** Writes to the user dconf database.
 
-### configure_vimrc
+### configure_neovim
 
-* **Does:** Writes a three line `~/.vimrc` that turns on syntax highlighting, line numbers, and
-  mouse support.
-* **Inputs:** None.
-* **Outputs:** `~/.vimrc`.
-* **Why it exists:** Gives Vim usable defaults.
-* **Side effects:** Overwrites any existing `~/.vimrc`.
+* **Does:** Creates `~/.config/nvim` and copies `configs/nvim/init.lua` into it. Prints a warning if
+  the file is missing.
+* **Inputs:** `configs/nvim/init.lua`.
+* **Outputs:** `~/.config/nvim/init.lua`.
+* **Why it exists:** Gives Neovim the same settings as the macOS setup.
+* **Side effects:** Overwrites any existing `~/.config/nvim/init.lua` without a backup.
 
 ### install_vlc_restricted_extras
 
@@ -284,15 +294,18 @@ All other functions live in `debian-gnome-functions.sh` and take no arguments.
   trailing spaces is passed to apt with the spaces.
 * **GRUB edit is narrow.** `speed_boot_time` only matches `GRUB_TIMEOUT=5`. Any other value is left
   alone.
-* **Overwrites without asking.** `configure_vimrc` replaces `~/.vimrc` and `configure_git` replaces
-  `~/.gitignore_global`.
+* **Overwrites without asking.** `configure_neovim` replaces `~/.config/nvim/init.lua` and
+  `configure_git` replaces `~/.gitignore_global`.
 * **Manual steps remain.** The README lists GNOME extensions and shortcuts that are still done by
   hand.
+* **Neovim needs 0.12 or newer.** `configs/nvim/init.lua` calls `vim.pack`. Debian 13 ships
+  Neovim 0.10.4, so install a newer build first or the config fails to load.
 
 ## Change log
 
 | Date       | Summary                                                                                                   |
 | :--------- | :------------------------------------------------------------------------------------------------------- |
+| 2026-11-13 | Replaced Vim with Neovim, which copies the macOS init.lua and sets Git's editor to nvim. |
 | 2026-11-08 | Replaced Numix with Papirus icons, to match the Fedora GNOME setup. |
 | 2026-11-08 | Added firmware updates through fwupd, Flathub, and a development tools step to match Fedora. |
 | 2026-11-08 | Added the Nerd Font step with a checksum check, and added unzip to the package list. |

@@ -136,13 +136,16 @@ customize_gnome() {
     echo 'Gnome customized successfully!'
 }
 
-# 10. Customize vimrc file settings.
-# NOTE: This overwrites any existing ~/.vimrc.
-configure_vimrc() {
-    echo "syntax on" > ~/.vimrc
-    echo "set number" >> ~/.vimrc
-    echo "set mouse=r" >> ~/.vimrc
-    echo 'Vim customized successfully!'
+# 10. Configure Neovim.
+# NOTE: This overwrites any existing ~/.config/nvim/init.lua. The config matches the macOS setup.
+configure_neovim() {
+    mkdir -p ~/.config/nvim
+    if [ -f configs/nvim/init.lua ]; then
+        cp configs/nvim/init.lua ~/.config/nvim/init.lua
+    else
+        echo 'Warning: configs/nvim/init.lua not found!' >&2
+    fi
+    echo 'Neovim configured successfully!'
 }
 
 # 11. Install VLC, plugins, and restricted extras.
@@ -216,7 +219,7 @@ configure_git() {
     cp configs/.gitignore_global ~/
     git config --global init.defaultBranch main
     git config --global color.ui auto
-    git config --global core.editor vim
+    git config --global core.editor nvim
     git config --global pull.rebase false
     git config --global core.excludesfile ~/.gitignore_global
     echo 'Base configuration for Git completed. Ensure you set your username and email!'

@@ -62,17 +62,18 @@ This project reads no environment variables. Behavior is controlled by the files
 
 | File                        | Description                                 | Default                    |
 | :-------------------------- | :------------------------------------------ | :------------------------- |
-| `package_install.txt`       | Packages to install, one per line           | CLI tools, Tilix, Vim      |
+| `package_install.txt`       | Packages to install, one per line           | CLI tools, Tilix, Neovim   |
 | `package_remove.txt`        | Packages to purge, one per line             | Bundled GNOME games        |
 | `wallpapers/`               | Wallpaper copied to `~/Pictures/wallpapers` | Feather wallpaper          |
 | `configs/.gitignore_global` | Global Git ignore file copied to `~/`       | Common OS and editor files |
+| `configs/nvim/init.lua`     | Neovim config copied to `~/.config/nvim`    | Catppuccin Macchiato theme |
 
 ## Usage
 
 Run `./debian-gnome-setup.sh` and pick a step by number. Choose **18** to run every step in order.
 
-| Option | Step                                              |
-| -----: | :------------------------------------------------ |
+| Option | Step                                             |
+| -----: | :----------------------------------------------- |
 |      1 | Back up configs and create .ssh directory        |
 |      2 | Update, install, and remove packages             |
 |      3 | Update firmware                                  |
@@ -82,7 +83,7 @@ Run `./debian-gnome-setup.sh` and pick a step by number. Choose **18** to run ev
 |      7 | Install fonts                                    |
 |      8 | Copy wallpapers to `~/Pictures/wallpapers`       |
 |      9 | Customize GNOME settings                         |
-|     10 | Customize vimrc file settings                    |
+|     10 | Configure Neovim                                 |
 |     11 | Install VLC, plugins, and restricted extras      |
 |     12 | Install UFW and enable it                        |
 |     13 | Configure swappiness                             |

@@ -35,7 +35,7 @@ menu=(
     "install_font|Install Nerd font"
     "copy_wallpapers|Copy wallpapers"
     "customize_tiling|Install Sway, foot, and rofi configs"
-    "configure_vimrc|Customize vimrc file"
+    "configure_neovim|Configure Neovim"
     "configure_git|Configure Git"
     "# Applications"
     "install_vlc|Install VLC, plugins, and codecs"

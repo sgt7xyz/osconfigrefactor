@@ -11,5 +11,5 @@ tilix
 tmux
 tree
 unzip
-vim
+neovim
 wget

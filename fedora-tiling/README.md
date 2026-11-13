@@ -68,6 +68,7 @@ This project reads no environment variables. Behavior is controlled by the files
 | `configs/foot/foot.ini`     | foot terminal config copied to `~/.config/foot` | Catppuccin Macchiato theme       |
 | `configs/rofi/`             | rofi launcher config and theme                  | Catppuccin Macchiato theme       |
 | `configs/.gitignore_global` | Global Git ignore file copied to `~/`           | Common OS and editor files       |
+| `configs/nvim/init.lua`     | Neovim config copied to `~/.config/nvim`        | Catppuccin Macchiato theme       |
 | `scripts/`                  | Volume helper scripts                           | `volume-up.sh`, `volume-down.sh` |
 | `wallpapers/`               | Wallpapers copied to `~/Pictures/wallpapers`    | Eight wallpapers                 |
 
@@ -77,31 +78,31 @@ Run the setup script and pick a step by number. Choose **22** to run every step 
 it finishes, any steps that failed are listed together. Steps 1 to 14 are the same in
 debian-tiling, so the same number means the same step on both systems.
 
-| Option | Group                | Step                                   |
-| -----: | :------------------- | :------------------------------------- |
-|      1 | System preparation   | Back up configs and create .ssh directory|
-|      2 | System preparation   | Update and upgrade the system          |
-|      3 | System preparation   | Install and remove packages            |
-|      4 | Environment setup    | Create custom directories              |
-|      5 | Environment setup    | Install Nerd font                      |
-|      6 | Environment setup    | Copy wallpapers                        |
-|      7 | Environment setup    | Install Sway, foot, and rofi configs   |
-|      8 | Environment setup    | Customize vimrc file                   |
-|      9 | Environment setup    | Configure Git                          |
-|     10 | Applications         | Install VLC, plugins, and codecs       |
-|     11 | Applications         | Install VSCode                         |
-|     12 | System configuration | Enable the firewall (deny all inbound) |
-|     13 | System configuration | Configure swappiness                   |
-|     14 | System configuration | Speed up boot time                     |
-|     15 | Fedora extras        | Update firmware                        |
-|     16 | Fedora extras        | Enable Flathub repository              |
-|     17 | Fedora extras        | Install development tools              |
-|     18 | Fedora extras        | Install OBS Studio                     |
-|     19 | Fedora extras        | Install Docker                         |
-|     20 | Fedora extras        | Install VirtualBox                     |
-|     21 | Fedora extras        | Install Brave browser                  |
-|     22 | All                  | Execute all steps                      |
-|      0 | Exit                 | Exit                                   |
+| Option | Group                | Step                                      |
+| -----: | :------------------- | :---------------------------------------- |
+|      1 | System preparation   | Back up configs and create .ssh directory |
+|      2 | System preparation   | Update and upgrade the system             |
+|      3 | System preparation   | Install and remove packages               |
+|      4 | Environment setup    | Create custom directories                 |
+|      5 | Environment setup    | Install Nerd font                         |
+|      6 | Environment setup    | Copy wallpapers                           |
+|      7 | Environment setup    | Install Sway, foot, and rofi configs      |
+|      8 | Environment setup    | Configure Neovim                          |
+|      9 | Environment setup    | Configure Git                             |
+|     10 | Applications         | Install VLC, plugins, and codecs          |
+|     11 | Applications         | Install VSCode                            |
+|     12 | System configuration | Enable the firewall (deny all inbound)    |
+|     13 | System configuration | Configure swappiness                      |
+|     14 | System configuration | Speed up boot time                        |
+|     15 | Fedora extras        | Update firmware                           |
+|     16 | Fedora extras        | Enable Flathub repository                 |
+|     17 | Fedora extras        | Install development tools                 |
+|     18 | Fedora extras        | Install OBS Studio                        |
+|     19 | Fedora extras        | Install Docker                            |
+|     20 | Fedora extras        | Install VirtualBox                        |
+|     21 | Fedora extras        | Install Brave browser                     |
+|     22 | All                  | Execute all steps                         |
+|      0 | Exit                 | Exit                                      |
 
 ## Project structure
 
@@ -114,7 +115,7 @@ debian-tiling, so the same number means the same step on both systems.
 ├── package_install.txt          # Packages to install
 ├── package_remove.txt           # Packages to remove
 ├── fixed.txt                    # Owner's scratch list of steps to fix
-├── configs/                     # Sway, foot, rofi, and Git configs
+├── configs/                     # Sway, foot, rofi, Neovim, and Git configs
 ├── scripts/                     # volume-up.sh and volume-down.sh
 ├── wallpapers/                  # Desktop wallpapers
 ├── images/                      # README images

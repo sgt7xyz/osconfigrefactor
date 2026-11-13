@@ -55,12 +55,13 @@ fedora-gnome-setup.sh --> fedora-gnome-functions.sh --> dnf, flatpak, fwupdmgr, 
 
 This project reads no environment variables. Behavior is controlled by the files below.
 
-| File                        | Description                                  | Default                        |
-| :-------------------------- | :------------------------------------------- | :----------------------------- |
-| `package_install.txt`       | Packages to install, one per line            | GNOME Tweaks, Tilix, Vim, nmap |
-| `package_remove.txt`        | Packages to remove, one per line             | `tali`                         |
-| `wallpapers/`               | Wallpapers copied to `~/Pictures/wallpapers` | Eleven wallpapers              |
-| `configs/.gitignore_global` | Global Git ignore file copied to `~/`        | Common OS and editor files     |
+| File                        | Description                                  | Default                           |
+| :-------------------------- | :------------------------------------------- | :-------------------------------- |
+| `package_install.txt`       | Packages to install, one per line            | GNOME Tweaks, Tilix, Neovim, nmap |
+| `package_remove.txt`        | Packages to remove, one per line             | `tali`                            |
+| `wallpapers/`               | Wallpapers copied to `~/Pictures/wallpapers` | Eleven wallpapers                 |
+| `configs/.gitignore_global` | Global Git ignore file copied to `~/`        | Common OS and editor files        |
+| `configs/nvim/init.lua`     | Neovim config copied to `~/.config/nvim`     | Catppuccin Macchiato theme        |
 
 ## Usage
 
@@ -82,7 +83,7 @@ Run `./fedora-gnome-setup.sh` and pick a step by number. Choose **22** to run ev
 |     12 | Environment setup    | Install fonts                     |
 |     13 | Environment setup    | Copy wallpapers                   |
 |     14 | Environment setup    | Customize GNOME settings          |
-|     15 | Environment setup    | Configure Vim                     |
+|     15 | Environment setup    | Configure Neovim                  |
 |     16 | Environment setup    | Install Papirus icons             |
 |     17 | Applications         | Install VSCode                    |
 |     18 | Applications         | Configure Git                     |

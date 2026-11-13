@@ -62,7 +62,7 @@ while true; do
     echo '12. Install fonts'
     echo '13. Copy wallpapers'
     echo '14. Customize GNOME settings'
-    echo '15. Configure Vim'
+    echo '15. Configure Neovim'
     echo '16. Install Papirus icons'
     echo
     echo '  Applications & Tools:'
@@ -141,7 +141,7 @@ while true; do
             ;;
         
         15) 
-            run_step configure_vimrc
+            run_step configure_neovim
             ;;
 
         16) 
@@ -187,7 +187,7 @@ while true; do
             run_step install_font
             run_step copy_wallpapers
             run_step customize_gnome
-            run_step configure_vimrc
+            run_step configure_neovim
             run_step install_papirus_icons
             run_step install_vscode
             run_step configure_git

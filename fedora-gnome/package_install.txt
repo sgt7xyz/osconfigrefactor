@@ -4,5 +4,5 @@ fastfetch
 gnome-extensions-app
 nmap
 tilix
-vim
+neovim
 unzip

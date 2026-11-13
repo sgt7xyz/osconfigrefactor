@@ -59,7 +59,7 @@ failing command stops only that step and the menu keeps running.
 ### common-functions.sh
 
 **Purpose:** The menu engine (`run_step`, `run_entry`, `run_menu`) and every step that works the
-same on Debian and Fedora: backups, directories, the font, wallpapers, Vim, Git, swappiness, and
+same on Debian and Fedora: backups, directories, the font, wallpapers, Neovim, Git, swappiness, and
 the `apply_package_list` and `install_config` helpers. It defines functions only.
 
 **Depends on:** `curl`, `unzip`, `sha256sum`, `fc-cache`, `git`, and `sudo`.
@@ -102,6 +102,7 @@ wallpaper. The remove list holds `aisleriot`.
 * `rofi/` holds the launcher config and its Catppuccin Macchiato theme, set to open `foot`.
 * `waybar/` is an empty placeholder kept with a `.keep` file.
 * `.gitignore_global` holds global Git ignore patterns.
+* `nvim/init.lua` is the Neovim config, the same file used on macOS. The Neovim step installs it.
 
 **Depends on:** The packages from `package_install.txt`.
 
@@ -232,14 +233,14 @@ These entries describe `common-functions.sh`, which is identical in both tiling 
 * **Why it exists:** The window manager config sets the wallpaper from this folder.
 * **Side effects:** File writes.
 
-#### configure_vimrc
+#### configure_neovim
 
-* **Does:** Writes a `~/.vimrc` that silences the bell and turns on syntax, line numbers, and
-  mouse support.
-* **Inputs:** None.
-* **Outputs:** `~/.vimrc`.
-* **Why it exists:** Gives Vim usable defaults.
-* **Side effects:** Overwrites any existing `~/.vimrc`.
+* **Does:** Installs `configs/nvim/init.lua` to `~/.config/nvim/init.lua` with `install_config`.
+* **Inputs:** `configs/nvim/init.lua`.
+* **Outputs:** `~/.config/nvim/init.lua`. A different existing file is first backed up under
+  `~/.config-backups/`.
+* **Why it exists:** Gives Neovim the same settings as the macOS setup.
+* **Side effects:** File writes and an optional backup.
 
 #### configure_git
 
@@ -429,11 +430,14 @@ These entries describe `common-functions.sh`, which is identical in both tiling 
 * **dnf5 only.** `install_docker` and `install_brave` use the dnf5 `addrepo` syntax, which
   matches the Fedora 41 or newer requirement in the README.
 * **Unused helpers.** No key binding calls the volume scripts.
+* **Neovim needs 0.12 or newer.** `configs/nvim/init.lua` calls `vim.pack`, which older packaged
+  versions lack. Run `nvim --version` before relying on the config.
 
 ## Change log
 
 | Date       | Summary                                                                                                               |
 | :--------- | :-------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-13 | Replaced Vim with Neovim, which installs the macOS init.lua and sets Git's editor to nvim. |
 | 2026-11-08 | Added a `.ssh` directory step with `700` permissions to the backup step. |
 | 2026-11-02 | Moved the VirtualBox install from 7.1 to 7.2 (7.2.22 is the current release).                                         |
 | 2026-11-01 | Renamed steps to match debian-tiling, such as configure_firewall and configure_boot_time, and ordered them by menu.   |

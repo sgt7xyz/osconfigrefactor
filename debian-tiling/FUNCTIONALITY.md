@@ -6,7 +6,7 @@ This document is a walkthrough of how the code works. See the [README](README.md
 
 The project turns a minimal Debian install into a keyboard driven desktop built on the i3 tiling
 window manager. It installs Xorg, i3, polybar, rofi, alacritty, picom, and a set of developer
-tools, then applies fonts, wallpapers, terminal and Vim settings, a firewall, kernel and boot
+tools, then applies fonts, wallpapers, terminal and Neovim settings, a firewall, kernel and boot
 tweaks, VSCode, and Git defaults.
 
 Everything is driven from an interactive menu grouped into five sections. Each option runs one
@@ -63,7 +63,7 @@ failing command stops only that step and the menu keeps running.
 ### common-functions.sh
 
 **Purpose:** The menu engine (`run_step`, `run_entry`, `run_menu`) and every step that works the
-same on Debian and Fedora: backups, directories, the font, wallpapers, Vim, Git, swappiness, and
+same on Debian and Fedora: backups, directories, the font, wallpapers, Neovim, Git, swappiness, and
 the `apply_package_list` and `install_config` helpers. It defines functions only.
 
 **Depends on:** `curl`, `unzip`, `sha256sum`, `fc-cache`, `git`, and `sudo`.
@@ -105,6 +105,7 @@ Python build dependencies, and command line utilities. The remove list holds `ai
   format.
 * `picom.conf`, `.Xresources`, `.xsessionrc`, and `xorg.conf.new` hold compositor and X settings.
 * `.bash_aliases` holds shell aliases. `.gitignore_global` holds global Git ignore patterns.
+* `nvim/init.lua` is the Neovim config, the same file used on macOS. The Neovim step installs it.
 
 **Depends on:** The packages from `package_install.txt`.
 
@@ -241,14 +242,14 @@ These entries describe `common-functions.sh`, which is identical in both tiling 
 * **Why it exists:** The window manager config sets the wallpaper from this folder.
 * **Side effects:** File writes.
 
-#### configure_vimrc
+#### configure_neovim
 
-* **Does:** Writes a `~/.vimrc` that silences the bell and turns on syntax, line numbers, and
-  mouse support.
-* **Inputs:** None.
-* **Outputs:** `~/.vimrc`.
-* **Why it exists:** Gives Vim usable defaults.
-* **Side effects:** Overwrites any existing `~/.vimrc`.
+* **Does:** Installs `configs/nvim/init.lua` to `~/.config/nvim/init.lua` with `install_config`.
+* **Inputs:** `configs/nvim/init.lua`.
+* **Outputs:** `~/.config/nvim/init.lua`. A different existing file is first backed up under
+  `~/.config-backups/`.
+* **Why it exists:** Gives Neovim the same settings as the macOS setup.
+* **Side effects:** File writes and an optional backup.
 
 #### configure_git
 
@@ -362,11 +363,14 @@ These entries describe `common-functions.sh`, which is identical in both tiling 
 * **Mixed audio tools.** The volume scripts use `wpctl`, but the media key bindings in `i3config`
   use `pactl`.
 * **Unused helper.** `scripts/system-update.sh` is not copied anywhere by the setup script.
+* **Neovim needs 0.12 or newer.** `configs/nvim/init.lua` calls `vim.pack`. Debian 13 ships
+  Neovim 0.10.4, so install a newer build first or the config fails to load.
 
 ## Change log
 
 | Date       | Summary                                                                                                    |
 | :--------- | :--------------------------------------------------------------------------------------------------------- |
+| 2026-11-13 | Replaced Vim with Neovim, which installs the macOS init.lua and sets Git's editor to nvim. |
 | 2026-11-08 | Added a `.ssh` directory step with `700` permissions to the backup step. |
 | 2026-11-01 | Renamed steps to match fedora-tiling, merged the two VSCode functions, and ordered them by menu.           |
 | 2026-11-01 | Moved the menu engine and shared steps into common-functions.sh, identical in both tiling repos.           |

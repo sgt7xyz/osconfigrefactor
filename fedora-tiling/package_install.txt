@@ -25,6 +25,5 @@ swaybg
 tcpdump
 tmux
 unzip
-vim
 wdisplays
 wget
