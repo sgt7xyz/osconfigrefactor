@@ -208,17 +208,10 @@ copy_wallpapers() {
     echo 'Wallpapers copied successfully!'
 }
 
-# NOTE: This overwrites any existing ~/.vimrc. The bell settings silence the terminal beep.
-configure_vimrc() {
-    cat > ~/.vimrc <<'VIMRC'
-set noerrorbells
-set visualbell
-set t_vb=
-syntax on
-set number
-set mouse=r
-VIMRC
-    echo 'Vim customized successfully!'
+# Installs the same Neovim config used on macOS. install_config backs up an existing init.lua first.
+configure_neovim() {
+    install_config configs/nvim/init.lua ~/.config/nvim/init.lua
+    echo 'Neovim configured successfully!'
 }
 
 # Sets the same Git defaults on every machine. Name and email are personal, so they are left to the
@@ -231,7 +224,7 @@ configure_git() {
     fi
     git config --global init.defaultBranch main
     git config --global color.ui auto
-    git config --global core.editor vim
+    git config --global core.editor nvim
     git config --global pull.rebase false
     git config --global core.excludesfile ~/.gitignore_global
     git config --global --list

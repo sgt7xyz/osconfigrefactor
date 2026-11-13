@@ -24,7 +24,7 @@ fedora-gnome-setup.sh (menu loop)
         ├── dnf, flatpak, fwupdmgr  <-- package_install.txt, package_remove.txt
         ├── curl, unzip, fc-cache   <-- Nerd Fonts release on GitHub
         ├── cp, gsettings           <-- wallpapers/
-        ├── cp, git config          <-- configs/.gitignore_global
+        ├── cp, git config          <-- configs/.gitignore_global, configs/nvim/init.lua
         ├── rpm, dnf                <-- Microsoft VSCode repository
         └── firewall-cmd, sysctl, grub2-mkconfig
 ```
@@ -57,7 +57,7 @@ code.
 ### package_install.txt and package_remove.txt
 
 **Purpose:** Package lists, one name per line. The install list covers GNOME Tweaks, the extensions
-app, dconf-editor, fastfetch, nmap, Tilix, and Vim. The remove list holds `tali`.
+app, dconf-editor, fastfetch, nmap, Tilix, and Neovim. The remove list holds `tali`.
 
 **Depends on:** Nothing.
 
@@ -66,6 +66,15 @@ app, dconf-editor, fastfetch, nmap, Tilix, and Vim. The remove list holds `tali`
 **Purpose:** Global Git ignore patterns copied into the home directory by the Git step.
 
 **Depends on:** Nothing.
+
+### configs/nvim/init.lua
+
+**Purpose:** Neovim config copied to `~/.config/nvim` by the Neovim step. It is the same file as
+`macos-setup/configs/nvim/init.lua`. It installs the Catppuccin Macchiato theme with `vim.pack`,
+then turns on line numbers, a status line, and visible whitespace.
+
+**Depends on:** Neovim 0.12 or newer, and network access on first launch to clone the theme from
+GitHub.
 
 ### .github/workflows/shellcheck.yml
 
@@ -226,13 +235,14 @@ All other functions live in `fedora-gnome-functions.sh` and take no arguments.
 * **Why it exists:** GNOME picks the wallpaper key from the active theme, so both must be set.
 * **Side effects:** Writes to the user dconf database.
 
-### configure_vimrc
+### configure_neovim
 
-* **Does:** Writes a three line `~/.vimrc` with syntax, line numbers, and mouse support.
-* **Inputs:** None.
-* **Outputs:** `~/.vimrc`.
-* **Why it exists:** Gives Vim usable defaults.
-* **Side effects:** Overwrites any existing `~/.vimrc`.
+* **Does:** Creates `~/.config/nvim` and copies `configs/nvim/init.lua` into it. Prints a warning if
+  the file is missing.
+* **Inputs:** `configs/nvim/init.lua`.
+* **Outputs:** `~/.config/nvim/init.lua`.
+* **Why it exists:** Gives Neovim the same settings as the macOS setup.
+* **Side effects:** Overwrites any existing `~/.config/nvim/init.lua` without a backup.
 
 ### install_papirus_icons
 
@@ -292,11 +302,14 @@ All other functions live in `fedora-gnome-functions.sh` and take no arguments.
 * **Failures stop a step, not the run.** In option 22 a failed step prints an error and the next
   step still runs. Scroll back to check for `failed with exit code` lines.
 * **Unused directory.** `~/.config/tilix/schemes` is created but nothing is copied into it yet.
+* **Neovim needs 0.12 or newer.** `configs/nvim/init.lua` calls `vim.pack`, which older packaged
+  versions lack. Run `nvim --version` before relying on the config.
 
 ## Change log
 
 | Date       | Summary                                                                                                  |
 | :--------- | :------------------------------------------------------------------------------------------------------- |
+| 2026-11-13 | Replaced Vim with Neovim, which copies the macOS init.lua and sets Git's editor to nvim. |
 | 2026-11-08 | Replaced Numix with Papirus icons, because Fedora 45 no longer packages Numix. |
 | 2026-11-08 | Added unzip to the package list, which the Nerd Font step needs on a stock install. |
 | 2026-11-08 | Font step now fetches the latest Nerd Font release and verifies it against that release's SHA-256.txt. |

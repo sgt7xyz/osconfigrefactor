@@ -47,7 +47,7 @@ while true; do
     echo '7. Install fonts'
     echo '8. Copy wallpapers to your ~/Pictures/wallpapers directory'
     echo '9. Customize Gnome settings'
-    echo '10. Customize vimrc file settings'
+    echo '10. Configure Neovim'
     echo '11. Install VLC, plugins, and restricted extras'
     echo '12. Install UFW and enable it'
     echo '13. Configure swappiness'
@@ -101,7 +101,7 @@ while true; do
             ;;
 
         10)  
-            run_step configure_vimrc
+            run_step configure_neovim
             ;;
         
         11)  
@@ -146,7 +146,7 @@ while true; do
             run_step install_font
             run_step copy_wallpapers
             run_step customize_gnome
-            run_step configure_vimrc
+            run_step configure_neovim
             run_step install_vlc_restricted_extras
             run_step install_ufw_enable
             run_step configure_swappiness

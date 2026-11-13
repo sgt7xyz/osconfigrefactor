@@ -65,13 +65,14 @@ script.
 
 This project reads no environment variables. Behavior is controlled by the files below.
 
-| File or folder        | Description                                        | Default                      |
-| :-------------------- | :------------------------------------------------- | :--------------------------- |
-| `package_install.txt` | Packages to install, one per line                  | Xorg, i3, polybar, dev tools |
-| `package_remove.txt`  | Packages to purge, one per line                    | `aisleriot`                  |
-| `configs/`            | i3, polybar, rofi, alacritty, picom, and X configs | Catppuccin Macchiato theme   |
-| `scripts/`            | Helper scripts copied to `~/scripts`               | Volume and update helpers    |
-| `wallpapers/`         | Wallpapers copied to `~/Pictures/wallpapers`       | Nine wallpapers              |
+| File or folder          | Description                                        | Default                      |
+| :---------------------- | :------------------------------------------------- | :--------------------------- |
+| `package_install.txt`   | Packages to install, one per line                  | Xorg, i3, polybar, dev tools |
+| `package_remove.txt`    | Packages to purge, one per line                    | `aisleriot`                  |
+| `configs/`              | i3, polybar, rofi, alacritty, picom, and X configs | Catppuccin Macchiato theme   |
+| `configs/nvim/init.lua` | Neovim config copied to `~/.config/nvim`           | Catppuccin Macchiato theme   |
+| `scripts/`              | Helper scripts copied to `~/scripts`               | Volume and update helpers    |
+| `wallpapers/`           | Wallpapers copied to `~/Pictures/wallpapers`       | Nine wallpapers              |
 
 ## Usage
 
@@ -88,7 +89,7 @@ fedora-tiling, so the same number means the same step on both systems.
 |      5 | Environment setup    | Install Nerd font                                |
 |      6 | Environment setup    | Copy wallpapers                                  |
 |      7 | Environment setup    | Install i3, polybar, rofi, and alacritty configs |
-|      8 | Environment setup    | Customize vimrc file                             |
+|      8 | Environment setup    | Configure Neovim                                 |
 |      9 | Environment setup    | Configure Git                                    |
 |     10 | Applications         | Install VLC, plugins, and codecs                 |
 |     11 | Applications         | Install VSCode                                   |
@@ -109,7 +110,7 @@ fedora-tiling, so the same number means the same step on both systems.
 ├── debian-tiling-vm-prep.sh     # Optional VirtualBox guest prep
 ├── package_install.txt          # Packages to install
 ├── package_remove.txt           # Packages to purge
-├── configs/                     # i3, polybar, rofi, alacritty, picom, and X configs
+├── configs/                     # i3, polybar, rofi, alacritty, Neovim, picom, and X configs
 ├── scripts/                     # volume-up.sh, volume-down.sh, system-update.sh
 ├── wallpapers/                  # Desktop wallpapers
 ├── images/                      # README images
