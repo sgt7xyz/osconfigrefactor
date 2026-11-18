@@ -16,5 +16,6 @@ shellcheck
 ssldump
 tcpdump
 tree
+vagrant
 watch
 wget2
